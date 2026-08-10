@@ -34,24 +34,36 @@ class RetrievedDocument:
     similarity_score: float
 
 
-# Kept solely for local smoke tests; no documents are indexed automatically.
-TEST_DOCUMENTS: tuple[Document, ...] = (
+# Development-only local knowledge base. It is explicitly not external evidence.
+SAMPLE_DOCUMENTS: tuple[Document, ...] = (
     Document(
-        title="Acid rain overview",
-        content="Acid rain forms when sulfur dioxide and nitrogen oxides react in the atmosphere.",
-        source="local-test",
+        title="Retrieval-augmented generation overview",
+        content=(
+            "Retrieval-augmented generation retrieves relevant documents and "
+            "uses them as context when generating an answer."
+        ),
+        source="development-sample",
     ),
     Document(
-        title="Solar energy overview",
-        content="Solar panels convert sunlight into electricity using photovoltaic cells.",
-        source="local-test",
+        title="Evidence-based answering",
+        content=(
+            "Evidence-based answering should cite retrieved passages and express "
+            "uncertainty when the available evidence is insufficient."
+        ),
+        source="development-sample",
     ),
     Document(
-        title="Python overview",
-        content="Python is a programming language used for web development and data science.",
-        source="local-test",
+        title="FAISS similarity search",
+        content=(
+            "FAISS IndexFlatIP performs exact inner-product search. With L2-normalized "
+            "embeddings, inner product is equivalent to cosine similarity."
+        ),
+        source="development-sample",
     ),
 )
+
+# Backwards-compatible test alias. Documents are never indexed automatically.
+TEST_DOCUMENTS = SAMPLE_DOCUMENTS
 
 
 class DocumentRetriever:
