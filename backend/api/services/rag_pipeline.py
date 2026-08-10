@@ -40,8 +40,8 @@ class RAGPipeline:
         self.verification_service = (
             verification_service
             or SciFactModelVerifier(
-                model_path="models/scifact-sanity",
-                max_length=256,
+                model_path="models/scifact",
+                max_length=128,
             )
         )
 
