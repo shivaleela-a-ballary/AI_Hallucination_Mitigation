@@ -4,9 +4,15 @@ RAG Pipeline
 This module coordinates the complete Retrieval-Augmented
 Generation (RAG) workflow.
 """
-from api.services.services import BackendServices
 from api.services.llm_service import LLMService
-from typing import Dict, Any
+from typing import Any
+
+from preprocessing.preprocess import QueryPreprocessor
+from retrieval.retrieve import DocumentRetriever, SAMPLE_DOCUMENTS
+from response_generation.formatter import source_payload
+from verification.knowledge_graph import EvidenceKnowledgeGraph
+from verification.scifact_verify import BaselineSciFactVerifier
+from verification.verifier import EvidenceRanker, EvidenceScorer
 
 
 class RAGPipeline:
@@ -16,91 +22,63 @@ class RAGPipeline:
 
     def __init__(
         self,
-        preprocessing_service=None,
-        retrieval_service=None,
-        verification_service=None,
-        llm_service=None
-    ):
-        self.backend = BackendServices()
+        preprocessing_service: QueryPreprocessor | None = None,
+        retrieval_service: DocumentRetriever | None = None,
+        verification_service: BaselineSciFactVerifier | None = None,
+        llm_service: LLMService | None = None,
+        evidence_ranker: EvidenceRanker | None = None,
+        evidence_scorer: EvidenceScorer | None = None,
+    ) -> None:
+        self.preprocessing_service = preprocessing_service or QueryPreprocessor()
+        self.retrieval_service = retrieval_service
+        self.verification_service = verification_service or BaselineSciFactVerifier()
+        self.llm_service = llm_service or LLMService()
+        self.evidence_ranker = evidence_ranker or EvidenceRanker()
+        self.evidence_scorer = evidence_scorer or EvidenceScorer()
 
 
-    def run(self, query: str) -> Dict[str, Any]:
+    def run(self, query: str) -> dict[str, Any]:
         """
         Execute the complete RAG workflow.
         """
 
-        # Step 1
-        processed_query = self._preprocess(query)
+        processed_query = self.preprocessing_service.process(query)
+        retriever = self._get_retriever()
+        retrieved_documents = retriever.retrieve(processed_query)
+        ranked_evidence = self.evidence_ranker.rank(retrieved_documents)
 
-        # Step 2
-        retrieved_documents = self.backend.retrieve(processed_query)
-
-        # Step 3
-        verification_result = self.backend.verify(
-            processed_query,
-            retrieved_documents
-        )
-
-        # Step 4
-        answer = self._generate_response(
-            processed_query,
-            retrieved_documents,
-            verification_result
+        knowledge_graph = EvidenceKnowledgeGraph()
+        knowledge_graph.add_evidence(ranked_evidence)
+        claims = self.verification_service.extract_claims(processed_query, ranked_evidence)
+        verifications = self.verification_service.verify(claims, ranked_evidence)
+        confidence = self.evidence_scorer.score(ranked_evidence, verifications)
+        answer = self.llm_service.generate(
+            processed_query, ranked_evidence, confidence.status, verifications
         )
 
         return {
             "query": query,
             "processed_query": processed_query,
-            "documents": retrieved_documents,
-            "verification": verification_result,
+            "sources": [source_payload(document) for document in ranked_evidence],
+            "evidence": [source_payload(document) for document in ranked_evidence],
+            "claims": [
+                {"claim": item.claim, "status": item.status, "evidence_titles": item.evidence_titles,
+                 "evidence_score": item.evidence_score, "method": item.method}
+                for item in verifications
+            ],
+            "verification_status": confidence.status,
+            "confidence_score": confidence.score,
+            "confidence_explanation": confidence.explanation,
+            "knowledge_graph": {
+                "nodes": knowledge_graph.graph.number_of_nodes(),
+                "edges": knowledge_graph.graph.number_of_edges(),
+            },
             "answer": answer
         }
 
-    # ----------------------------
-    # Internal helper methods
-    # ----------------------------
-
-    def _preprocess(self, query):
-
-        if self.preprocessing_service:
-            return self.preprocessing_service.process(query)
-
-        return query
-
-    def _retrieve(self, query):
-
-        if self.retrieval_service:
-            return self.retrieval_service.retrieve(query)
-
-        return [
-            {
-                "title": "Sample Document",
-                "content": "Sample retrieved evidence."
-            }
-        ]
-
-    def _verify(self, query, documents):
-
-        if self.verification_service:
-            return self.verification_service.verify(
-                query,
-                documents
-            )
-
-        return {
-            "status": "SUPPORTED",
-            "confidence": 0.96
-        }
-
-    def _generate_response(
-        self,
-        query,
-        documents,
-        verification
-    ):
-
-        return self.llm_service.generate(
-            query,
-            documents,
-            verification
-        )
+    def _get_retriever(self) -> DocumentRetriever:
+        """Lazily initialise the model/index so API startup remains lightweight."""
+        if self.retrieval_service is None:
+            self.retrieval_service = DocumentRetriever()
+            self.retrieval_service.add_documents(SAMPLE_DOCUMENTS)
+        return self.retrieval_service
