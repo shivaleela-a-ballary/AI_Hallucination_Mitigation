@@ -31,13 +31,7 @@ class ConfidenceResult:
 
 
 class EvidenceScorer:
-    """Calculate explainable confidence from retrieval and verification.
-
-    Formula:
-        50% retrieval similarity
-        25% evidence coverage
-        25% verification outcome
-    """
+    """Calculate explainable confidence from retrieval and verification."""
 
     def score(
         self,
@@ -52,44 +46,78 @@ class EvidenceScorer:
                 explanation="No verifiable evidence was retrieved.",
             )
 
-        similarity = (
-            sum(
-                max(float(item.similarity_score), 0.0)
-                for item in evidence
+        # Use only evidence that has a corresponding verification result.
+        pairs = list(zip(evidence, verifications))
+
+        # Retrieval relevance.
+        similarity_values = [
+            max(float(document.similarity_score), 0.0)
+            for document, _ in pairs
+        ]
+
+        similarity = sum(similarity_values) / len(similarity_values)
+
+        # Evidence coverage.
+        coverage = min(len(pairs), 4) / 4
+
+        # Weight each verification by:
+        # retrieval relevance × model confidence.
+        support_weight = 0.0
+        refute_weight = 0.0
+        uncertain_weight = 0.0
+
+        for document, result in pairs:
+            status = getattr(
+                result,
+                "status",
+                VerificationStatus.UNCERTAIN,
             )
-            / len(evidence)
+
+            confidence = float(
+                getattr(result, "confidence", 0.0)
+            )
+
+            relevance = max(
+                float(document.similarity_score),
+                0.0,
+            )
+
+            weight = relevance * confidence
+
+            if status == VerificationStatus.SUPPORTED:
+                support_weight += weight
+
+            elif status == VerificationStatus.REFUTED:
+                refute_weight += weight
+
+            else:
+                uncertain_weight += weight
+
+        total_weight = (
+            support_weight
+            + refute_weight
+            + uncertain_weight
         )
 
-        coverage = min(len(evidence), 4) / 4
-
-        statuses = [
-            getattr(result, "status", VerificationStatus.UNCERTAIN)
-            for result in verifications
-        ]
-
-        normalized_statuses = [
-            (
-                status.value
-                if isinstance(status, VerificationStatus)
-                else str(status)
-            )
-            for status in statuses
-        ]
-
-        if VerificationStatus.REFUTED.value in normalized_statuses:
-            outcome = 0.0
-            status = VerificationStatus.REFUTED
-
-        elif normalized_statuses and all(
-            value == VerificationStatus.SUPPORTED.value
-            for value in normalized_statuses
-        ):
-            outcome = 1.0
-            status = VerificationStatus.SUPPORTED
-
-        else:
+        if total_weight <= 0:
             outcome = 0.25
             status = VerificationStatus.UNCERTAIN
+
+        else:
+            support_ratio = support_weight / total_weight
+            refute_ratio = refute_weight / total_weight
+
+            if support_ratio >= 0.60:
+                outcome = support_ratio
+                status = VerificationStatus.SUPPORTED
+
+            elif refute_ratio >= 0.60:
+                outcome = 0.0
+                status = VerificationStatus.REFUTED
+
+            else:
+                outcome = 0.25
+                status = VerificationStatus.UNCERTAIN
 
         score = round(
             min(
@@ -106,6 +134,8 @@ class EvidenceScorer:
             status=status,
             explanation=(
                 "Similarity 50% + evidence coverage 25% "
-                "+ verification outcome 25%."
+                "+ weighted verification outcome 25%. "
+                "Verification is weighted by retrieval relevance "
+                "and SciFact model confidence."
             ),
         )

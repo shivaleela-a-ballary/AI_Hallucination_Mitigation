@@ -11,7 +11,8 @@ from typing import Any
 
 from api.services.llm_service import LLMService
 from preprocessing.preprocess import QueryPreprocessor
-from retrieval.retrieve import DocumentRetriever, SAMPLE_DOCUMENTS
+from retrieval.retrieve import DocumentRetriever
+from retrieval.scifact_documents import load_scifact_documents
 from response_generation.formatter import source_payload
 from verification.knowledge_graph import EvidenceKnowledgeGraph
 from verification.scifact.verifier import SciFactModelVerifier
@@ -140,12 +141,16 @@ class RAGPipeline:
 
             "answer": answer,
         }
-
     def _get_retriever(self) -> DocumentRetriever:
         """Lazily initialize the retrieval model/index."""
 
         if self.retrieval_service is None:
             self.retrieval_service = DocumentRetriever()
-            self.retrieval_service.add_documents(SAMPLE_DOCUMENTS)
+
+            scifact_documents = load_scifact_documents(
+                "data/scifact/corpus.jsonl"
+            )
+
+            self.retrieval_service.add_documents(scifact_documents)
 
         return self.retrieval_service
