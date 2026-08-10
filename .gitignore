@@ -216,3 +216,13 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+# Local SciFact dataset and model checkpoints
+models/
+data/scifact/
+
+
+# Local ML artifacts
+models/
+data/scifact/
+

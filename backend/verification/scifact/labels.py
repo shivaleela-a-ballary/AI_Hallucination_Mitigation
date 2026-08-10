@@ -26,3 +26,13 @@ def id_to_label(value: int) -> VerificationLabel:
     if value not in ID_TO_LABEL:
         raise ValueError(f"Unknown verification label ID: {value}")
     return ID_TO_LABEL[value]
+
+EVIDENCE_LABEL_TO_ID = {
+    VerificationLabel.SUPPORTED: 0,
+    VerificationLabel.REFUTED: 1,
+}
+
+ID_TO_EVIDENCE_LABEL = {
+    value: key
+    for key, value in EVIDENCE_LABEL_TO_ID.items()
+}

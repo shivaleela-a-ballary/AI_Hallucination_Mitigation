@@ -7,7 +7,7 @@ from pathlib import Path
 
 import torch
 
-from .labels import ID_TO_LABEL
+from .labels import ID_TO_EVIDENCE_LABEL
 from .model import SciFactModelConfig, load_local_sequence_classifier
 
 
@@ -72,10 +72,10 @@ class SciFactInference:
 
         predicted_id = int(torch.argmax(probabilities).item())
 
-        label = ID_TO_LABEL[predicted_id].value
+        label = ID_TO_EVIDENCE_LABEL[predicted_id].value
 
         probability_map = {
-            ID_TO_LABEL[index].value: float(probabilities[index].item())
+            ID_TO_EVIDENCE_LABEL[index].value: float(probabilities[index].item())
             for index in range(len(probabilities))
         }
 
