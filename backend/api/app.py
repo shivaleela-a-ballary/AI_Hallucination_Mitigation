@@ -10,6 +10,7 @@ from api.routes.health import router as health_router
 from api.routes.history import router as history_router
 
 from api.config import settings
+from api.middleware.error_handler import register_error_handlers
 
 app = FastAPI(
     title=settings.APP_NAME,
@@ -19,11 +20,12 @@ app = FastAPI(
 # CORS configuration
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],      # Change this later to your frontend URL
-    allow_credentials=True,
+    allow_origins=settings.CORS_ORIGINS,
+    allow_credentials=False,
     allow_methods=["*"],
     allow_headers=["*"],
 )
+register_error_handlers(app)
 
 # Register API routes
 app.include_router(chat_router, prefix="/api")

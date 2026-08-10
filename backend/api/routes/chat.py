@@ -1,7 +1,7 @@
 from fastapi import APIRouter
 from api.utils.logger import logger
 from api.models.request_models import ChatRequest
-from api.models.response_models import ChatResponse, Source
+from api.models.response_models import ChatResponse
 
 from api.services.integration_service import IntegrationService
 
@@ -21,15 +21,10 @@ def chat(request: ChatRequest):
 
         logger.info("Response generated successfully.")
 
-        return ChatResponse(
-            answer=result["answer"],
-            verification_status=result["verification"]["status"],
-            confidence_score=result["verification"]["confidence"],
-            sources=result["documents"]
-        )
+        return ChatResponse(**result)
 
     except Exception as e:
 
         logger.exception("Error while processing request")
 
-        raise e
+        raise

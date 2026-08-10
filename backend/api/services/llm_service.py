@@ -5,7 +5,15 @@ Provides a single interface for interacting with
 Large Language Models (LLMs).
 """
 
-from typing import List, Dict
+import logging
+from typing import Sequence
+
+from api.config import settings
+from response_generation.generator import GroundedResponseGenerator
+from retrieval.retrieve import RetrievedDocument
+from verification.scifact_verify import ClaimVerification, VerificationStatus
+
+logger = logging.getLogger(__name__)
 
 
 class LLMService:
@@ -13,28 +21,43 @@ class LLMService:
     Handles AI response generation.
     """
 
-    def __init__(self):
-        pass
+    def __init__(self, generator: GroundedResponseGenerator | None = None) -> None:
+        self.generator = generator or GroundedResponseGenerator()
 
     def generate(
         self,
         query: str,
-        documents: List[Dict],
-        verification: Dict
+        documents: Sequence[RetrievedDocument],
+        verification_status: VerificationStatus,
+        claims: Sequence[ClaimVerification],
     ) -> str:
         """
-        Generate a response using retrieved evidence.
+        Generate an evidence-grounded response.
+
+        When both ``OPENAI_API_KEY`` and ``LLM_MODEL`` are configured, use the
+        optional OpenAI SDK with an evidence-only prompt. Otherwise use the
+        explicit local development fallback.
         """
 
-        evidence_titles = ", ".join(
-            doc["title"] for doc in documents
-        )
+        if settings.OPENAI_API_KEY and settings.LLM_MODEL:
+            try:
+                from openai import OpenAI
 
-        response = (
-            f"Answer for: '{query}'.\n\n"
-            f"Verification Status: {verification['status']}.\n"
-            f"Confidence: {verification['confidence']:.2f}.\n\n"
-            f"Evidence Used:\n{evidence_titles}"
-        )
+                evidence_text = "\n".join(
+                    f"- [{item.source}] {item.title}: {item.content}" for item in documents
+                )
+                response = OpenAI(api_key=settings.OPENAI_API_KEY).responses.create(
+                    model=settings.LLM_MODEL,
+                    input=(
+                        "Answer only from the evidence below. State uncertainty if it does not "
+                        "support the answer. Do not add uncited facts.\n\n"
+                        f"Question: {query}\nVerification status: {verification_status.value}\n"
+                        f"Evidence:\n{evidence_text}"
+                    ),
+                )
+                if response.output_text.strip():
+                    return response.output_text.strip()
+            except Exception:
+                logger.exception("Configured external LLM failed; using local fallback.")
 
-        return response
+        return self.generator.generate(query, documents, verification_status, claims)
