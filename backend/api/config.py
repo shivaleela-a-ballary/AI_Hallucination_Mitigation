@@ -3,10 +3,11 @@ Configuration settings for the backend.
 """
 
 import os
+from pathlib import Path
 from dotenv import load_dotenv
 
-# Load variables from .env
-load_dotenv()
+# Load this project's backend/.env regardless of the launch directory.
+load_dotenv(Path(__file__).resolve().parents[1] / ".env")
 
 
 class Settings:
@@ -54,6 +55,14 @@ class Settings:
         "MODEL_NAME",
         "sentence-transformers/all-MiniLM-L6-v2"
     )
+
+    LLM_MODEL = os.getenv("LLM_MODEL", "")
+
+    CORS_ORIGINS = [
+        origin.strip()
+        for origin in os.getenv("CORS_ORIGINS", "http://localhost:5173").split(",")
+        if origin.strip()
+    ]
 
 
 settings = Settings()
