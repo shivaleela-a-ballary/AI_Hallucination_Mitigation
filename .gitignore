@@ -216,3 +216,15 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+# Local project datasets
+/data/
+
+# Local trained/downloaded models
+/models/
+
+# Node dependencies
+node_modules/
+
+# Node package manager logs
+npm-debug.log*
