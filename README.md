@@ -621,100 +621,9 @@ The frontend provides the user-facing interface.
 The interface is designed around the idea that the answer should not be separated from the evidence behind it.
 
 ---
-
-# 🧩 16. Backend Architecture
-
-The backend is organized into separate responsibilities.
-
-```text
-backend/
-│
-├── api/
-│   ├── app.py
-│   ├── config.py
-│   ├── dependencies.py
-│   ├── middleware/
-│   ├── models/
-│   ├── routes/
-│   ├── services/
-│   └── utils/
-│
-├── preprocessing/
-│   ├── embeddings.py
-│   ├── preprocess.py
-│   └── text_cleaning.py
-│
-├── retrieval/
-│   ├── faiss_index.py
-│   ├── rag_pipeline.py
-│   ├── retrieve.py
-│   └── scifact_documents.py
-│
-├── response_generation/
-│   ├── formatter.py
-│   └── generator.py
-│
-├── verification/
-│   ├── knowledge_graph.py
-│   ├── verifier.py
-│   └── scifact/
-│       ├── dataset_loader.py
-│       ├── evaluate.py
-│       ├── inference.py
-│       ├── labels.py
-│       ├── metrics.py
-│       ├── model.py
-│       ├── preprocess.py
-│       ├── train.py
-│       └── verifier.py
-│
-└── tests/
-```
-
 ---
 
-# 📁 17. Project Structure
-
-```text
-AI_Hallucination_Mitigation/
-│
-├── backend/
-│   ├── api/
-│   ├── preprocessing/
-│   ├── retrieval/
-│   ├── response_generation/
-│   ├── verification/
-│   └── tests/
-│
-├── frontend/
-│   ├── public/
-│   └── src/
-│       ├── components/
-│       ├── hooks/
-│       ├── lib/
-│       ├── routes/
-│       └── styles.css
-│
-├── data/
-│   └── scifact/
-│       └── corpus.jsonl
-│
-├── models/
-│   ├── scifact/
-│   ├── scifact-base/
-│   └── scifact-sanity/
-│
-├── notebooks/
-├── tests/
-│
-├── README.md
-├── requirements.txt
-└── .gitignore
-```
-
----
-
-# 🔌 18. API Layer
+# 🔌 16. API Layer
 
 FastAPI acts as the communication layer between the frontend and the AI pipeline.
 
@@ -744,7 +653,7 @@ RAG Pipeline
 
 ---
 
-# ❤️ 19. Health Check
+# ❤️ 17. Health Check
 
 The backend exposes a health endpoint.
 
@@ -767,7 +676,7 @@ It does not by itself prove that the complete question-answering pipeline is cor
 
 ---
 
-# 🧠 20. Complete Data Flow
+# 🧠 18. Complete Data Flow
 
 ```mermaid
 flowchart LR
@@ -809,7 +718,7 @@ flowchart LR
 
 ---
 
-# 🔁 21. RAG + Verification Architecture
+# 🔁 19. RAG + Verification Architecture
 
 The key architecture can be represented more simply as:
 
@@ -860,7 +769,7 @@ The key architecture can be represented more simply as:
 
 ---
 
-# 🛠️ 22. Technology Stack
+# 🛠️ 20. Technology Stack
 
 ## Frontend
 
@@ -906,7 +815,7 @@ Local Model Checkpoint
 
 ---
 
-# 📦 23. Installation
+# 📦 21. Installation
 
 ## Requirements
 
@@ -939,7 +848,7 @@ pip install -r backend\requirements.txt
 
 ---
 
-# ▶️ 24. Running the Backend
+# ▶️ 22. Running the Backend
 
 From the project root:
 
@@ -980,7 +889,7 @@ http://127.0.0.1:8000/api/health
 
 ---
 
-# ▶️ 25. Running the Frontend
+# ▶️ 23. Running the Frontend
 
 Open another terminal.
 
@@ -1004,7 +913,7 @@ Open the development URL shown by Vite.
 
 ---
 
-# 🧪 26. Testing Strategy
+# 🧪 24. Testing Strategy
 
 Testing should cover every major stage.
 
@@ -1074,7 +983,7 @@ Frontend
 
 ---
 
-# 📈 27. Evaluation
+# 📈 25. Evaluation
 
 The system should be evaluated using measurable metrics.
 
@@ -1124,7 +1033,7 @@ No accuracy, F1-score, hallucination reduction percentage, or improvement percen
 
 ---
 
-# 📊 28. Current Development Validation
+# 📊 26. Current Development Validation
 
 The following components have been validated during development:
 
@@ -1157,7 +1066,7 @@ with HTTP status `200 OK`.
 
 ---
 
-# ⚠️ 29. Important Development Finding
+# ⚠️ 27. Important Development Finding
 
 During integration testing, an incorrect response was observed where a question about Retrieval-Augmented Generation received an unrelated acid-rain response.
 
@@ -1191,7 +1100,7 @@ The final system should reject unrelated evidence rather than confidently return
 
 ---
 
-# 🚧 30. Limitations
+# 🚧 28. Limitations
 
 ### 1. Retrieval dependency
 
@@ -1219,7 +1128,7 @@ Even when evidence is available, response generation must remain grounded in tha
 
 ---
 
-# 🚀 31. Future Enhancements
+# 🚀 29. Future Enhancements
 
 Future versions can improve the system through:
 
@@ -1261,7 +1170,7 @@ Other possible enhancements:
 
 ---
 
-# 🔬 32. Research Significance
+# 🔬 30. Research Significance
 
 The project focuses on an important reliability problem in modern generative AI.
 
@@ -1288,31 +1197,10 @@ RELIABLE RESPONSE
 
 The system demonstrates how retrieval and verification can be combined to make AI responses more transparent and evidence-oriented.
 
----
-
-# 📚 33. Academic Concepts Covered
-
-The project brings together:
-
-- Artificial Intelligence
-- Natural Language Processing
-- Information Retrieval
-- Retrieval-Augmented Generation
-- Semantic Search
-- Vector Databases
-- FAISS
-- Claim Verification
-- SciFact
-- BERT
-- Knowledge Graphs
-- Explainable AI
-- Confidence Estimation
-- AI Reliability
-- Hallucination Mitigation
 
 ---
 
-# 🧭 34. Design Philosophy
+# 🧭 31. Design Philosophy
 
 The project follows five principles:
 
@@ -1368,7 +1256,7 @@ This makes the system easier to debug, evaluate, and extend.
 
 ---
 
-# 🏁 35. Final System Concept
+# 🏁 32. Final System Concept
 
 The complete project can be summarized as:
 
