@@ -1,587 +1,699 @@
 # 🛡️ AI Hallucination Mitigation System
 
 <p align="center">
-  <img src="frontend/public/favicon.ico" alt="AI Hallucination Mitigation" width="90">
-</p>
-
-<h1 align="center">AI Hallucination Mitigation System</h1>
-
-<p align="center">
-  <b>An evidence-first AI question-answering system designed to detect, verify, and reduce hallucinated responses.</b>
+  <b>Evidence-Based AI Question Answering and Claim Verification</b>
 </p>
 
 <p align="center">
-  <img src="https://img.shields.io/badge/AI-Hallucination%20Mitigation-6C4FF6?style=for-the-badge" alt="AI">
-  <img src="https://img.shields.io/badge/RAG-Evidence%20First-4C9AFF?style=for-the-badge" alt="RAG">
-  <img src="https://img.shields.io/badge/SciFact-Verification-20A464?style=for-the-badge" alt="SciFact">
-  <img src="https://img.shields.io/badge/FastAPI-Backend-009688?style=for-the-badge&logo=fastapi&logoColor=white" alt="FastAPI">
-  <img src="https://img.shields.io/badge/React%20%2B%20Vite-Frontend-61DAFB?style=for-the-badge&logo=react&logoColor=black" alt="React">
-</p>
-
-<p align="center">
-  <i>Instead of asking an AI to answer from memory, this system makes it retrieve evidence, verify claims, estimate confidence, and communicate uncertainty.</i>
+  Retrieve evidence → Verify claims → Estimate confidence → Generate reliable answers
 </p>
 
 ---
 
-## 📌 Table of Contents
+## 📌 Overview
 
-- [1. Project Overview](#1-project-overview)
-- [2. Problem Statement](#2-problem-statement)
-- [3. Why Hallucinations Matter](#3-why-hallucinations-matter)
-- [4. Core Idea](#4-core-idea)
-- [5. Objectives](#5-objectives)
-- [6. Key Features](#6-key-features)
-- [7. System Architecture](#7-system-architecture)
-- [8. End-to-End Workflow](#8-end-to-end-workflow)
-- [9. Verification Strategy](#9-verification-strategy)
-- [10. Technology Stack](#10-technology-stack)
-- [11. Project Structure](#11-project-structure)
-- [12. Frontend](#12-frontend)
-- [13. Backend](#13-backend)
-- [14. Retrieval and RAG](#14-retrieval-and-rag)
-- [15. SciFact Verification](#15-scifact-verification)
-- [16. Confidence and Uncertainty](#16-confidence-and-uncertainty)
-- [17. Knowledge Graph](#17-knowledge-graph)
-- [18. API](#18-api)
-- [19. Installation](#19-installation)
-- [20. Running the System](#20-running-the-system)
-- [21. Testing](#21-testing)
-- [22. Evaluation](#22-evaluation)
-- [23. Results and Current Validation](#23-results-and-current-validation)
-- [24. Example Interaction](#24-example-interaction)
-- [25. Research Contribution](#25-research-contribution)
-- [26. Limitations](#26-limitations)
-- [27. Future Enhancements](#27-future-enhancements)
-- [28. Team Roles](#28-team-roles)
-- [29. Reproducibility](#29-reproducibility)
-- [30. Academic Context](#30-academic-context)
-- [31. License](#31-license)
+Large Language Models can generate answers that are fluent, convincing, and factually incorrect. These unsupported or fabricated statements are commonly known as **AI hallucinations**.
 
----
+The **AI Hallucination Mitigation System** is designed to reduce this problem by introducing an evidence and verification layer between a user's question and the final response.
 
-# 1. Project Overview
+Instead of allowing an AI system to answer only from its learned knowledge, the proposed system follows an **evidence-first approach**:
 
-Large Language Models (LLMs) can produce fluent and convincing answers that are factually incorrect. These incorrect statements are commonly referred to as **AI hallucinations**.
-
-The **AI Hallucination Mitigation System** is an evidence-based question-answering and verification platform designed to reduce this problem.
-
-The central design principle is:
-
-> **Retrieve first. Verify second. Answer third.**
-
-Instead of relying only on the language model's internal knowledge, the system retrieves relevant evidence, evaluates whether claims are supported or refuted, calculates a confidence level, and exposes the evidence behind the answer.
-
-The system combines:
-
-- Retrieval-Augmented Generation (RAG)
-- Semantic document retrieval
-- FAISS-based similarity search
-- SciFact-based claim verification
-- Evidence ranking
-- Confidence estimation
-- Uncertainty handling
-- Source/evidence presentation
-- A React/TanStack frontend
-- A FastAPI backend
-
----
-
-# 2. Problem Statement
-
-Traditional generative AI systems may generate responses that:
-
-- contain fabricated facts,
-- mix information from unrelated topics,
-- cite sources that do not support the answer,
-- express uncertainty as certainty,
-- or produce plausible statements without evidence.
-
-This creates a major reliability problem for systems intended for research, education, information retrieval, and decision support.
-
-### Problem
-
-> **How can an AI system generate useful answers while reducing unsupported or hallucinated factual claims?**
-
-### Proposed approach
-
-The project introduces an evidence-first pipeline:
-
-```mermaid
-flowchart LR
-    A[User Question] --> B[Retrieve Evidence]
-    B --> C[Rank Relevant Evidence]
-    C --> D[Generate / Analyze Claims]
-    D --> E[SciFact Verification]
-    E --> F[Confidence Estimation]
-    F --> G{Enough Evidence?}
-    G -->|Yes| H[Evidence-Based Answer]
-    G -->|No| I[UNCERTAIN]
-    H --> J[Sources + Evidence]
-    I --> J
+```text
+                 USER QUESTION
+                       │
+                       ▼
+              ┌─────────────────┐
+              │    RETRIEVAL    │
+              │ Find evidence   │
+              └────────┬────────┘
+                       │
+                       ▼
+              ┌─────────────────┐
+              │ EVIDENCE RANKING│
+              │ Relevant context│
+              └────────┬────────┘
+                       │
+                       ▼
+              ┌─────────────────┐
+              │ CLAIM VERIFIER  │
+              │ SciFact model   │
+              └────────┬────────┘
+                       │
+              ┌────────┴────────┐
+              ▼                 ▼
+        ┌───────────┐     ┌────────────┐
+        │ SUPPORTED │     │  UNCERTAIN │
+        └─────┬─────┘     └──────┬─────┘
+              │                  │
+              └────────┬─────────┘
+                       ▼
+              ┌─────────────────┐
+              │   CONFIDENCE    │
+              │    ESTIMATION   │
+              └────────┬────────┘
+                       │
+                       ▼
+              ┌─────────────────┐
+              │ FINAL RESPONSE  │
+              │ + Evidence      │
+              │ + Sources       │
+              └─────────────────┘
 ```
 
+### Core principle
+
+> **Do not simply generate an answer. Retrieve evidence, verify the claim, and communicate uncertainty when the evidence is insufficient.**
+
 ---
 
-# 3. Why Hallucinations Matter
+# 🎯 1. Problem Statement
 
-A conventional chatbot may optimize for a fluent answer:
+Generative AI systems can produce:
+
+- incorrect factual statements,
+- fabricated information,
+- unsupported claims,
+- misleadingly confident answers,
+- irrelevant or unrelated evidence,
+- and citations that do not actually support the generated response.
+
+This becomes especially problematic when users expect reliable information.
+
+The project addresses the following problem:
+
+> **How can an AI question-answering system reduce hallucinations by grounding responses in retrieved evidence and verifying factual claims before presenting the final answer?**
+
+---
+
+# 💡 2. Proposed Solution
+
+The system combines multiple stages into a single pipeline:
 
 ```text
 Question
-   ↓
-Language Model
-   ↓
-Plausible Response
+   │
+   ▼
+Preprocessing
+   │
+   ▼
+Semantic Retrieval
+   │
+   ▼
+Relevant Evidence
+   │
+   ▼
+Claim Verification
+   │
+   ▼
+Confidence Estimation
+   │
+   ▼
+Evidence-Based Response
 ```
 
-The proposed system adds a verification layer:
-
-```text
-Question
-   ↓
-Retrieve evidence
-   ↓
-Check evidence relevance
-   ↓
-Verify claims
-   ↓
-Estimate confidence
-   ↓
-Answer OR admit uncertainty
-```
-
-The goal is not to make the model "sound confident."
-
-The goal is to make the system **deserve its confidence**.
+The important difference from a conventional chatbot is that **retrieval and verification are explicit parts of the answering process**.
 
 ---
 
-# 4. Core Idea
+# 🎯 3. Objectives
 
-The project can be summarized using the following principle:
+The project aims to:
 
-## 🧠 From "Generate" to "Generate + Verify"
-
-### Conventional approach
-
-```text
-User
- ↓
-LLM
- ↓
-Answer
-```
-
-### Proposed approach
-
-```text
-                 ┌─────────────────┐
-                 │   User Question │
-                 └────────┬────────┘
-                          ↓
-                 ┌─────────────────┐
-                 │ Evidence Search │
-                 └────────┬────────┘
-                          ↓
-                 ┌─────────────────┐
-                 │ Relevant Context│
-                 └────────┬────────┘
-                          ↓
-                 ┌─────────────────┐
-                 │ Claim Verification│
-                 └────────┬────────┘
-                          ↓
-                 ┌─────────────────┐
-                 │ Confidence Check│
-                 └───────┬─┬───────┘
-                         │ │
-                  Supported │ Insufficient
-                         │ │
-                         ↓ ↓
-                     Answer
-                       / 
-                  Uncertainty
-```
-
-This design makes **evidence a first-class part of the answer**.
+1. Reduce unsupported AI-generated statements.
+2. Retrieve relevant evidence for a user question.
+3. Use semantic similarity to identify useful documents.
+4. Rank retrieved evidence according to relevance.
+5. Verify factual claims using a SciFact-based model.
+6. Distinguish supported, refuted, and uncertain situations.
+7. Estimate confidence using evidence and verification signals.
+8. Present evidence and sources alongside the response.
+9. Provide a clean interface for question answering and verification.
+10. Build a modular architecture that can be extended with additional retrieval and verification techniques.
 
 ---
 
-# 5. Objectives
+# ✨ 4. Key Features
 
-The main objectives of the project are:
-
-1. **Reduce AI hallucinations** by grounding generated responses in retrieved evidence.
-2. **Retrieve relevant knowledge** from a factual document corpus.
-3. **Rank evidence** according to semantic relevance.
-4. **Verify factual claims** using a SciFact-based verification model.
-5. **Classify claims** as supported or refuted where the model supports those labels.
-6. **Handle uncertainty** when evidence is insufficient.
-7. **Estimate confidence** using evidence and verification signals.
-8. **Expose sources/evidence** to the user instead of hiding the basis of the answer.
-9. **Provide an interactive frontend** for asking questions and inspecting evidence.
-10. **Create an extensible architecture** that can later incorporate knowledge graphs, additional corpora, stronger verification models, and domain-specific sources.
-
----
-
-# 6. Key Features
-
-| Feature | Purpose |
+| Feature | Description |
 |---|---|
-| 🔎 Semantic Retrieval | Finds documents relevant to the question |
-| 📚 RAG | Grounds responses using retrieved evidence |
-| ⚡ FAISS Search | Efficient similarity-based retrieval |
-| 🧪 SciFact Verification | Checks claim/evidence relationships |
-| 🛡️ Evidence Filtering | Reduces unsupported answers |
-| 📊 Confidence Score | Communicates reliability |
-| ⚠️ Uncertainty Handling | Avoids forced answers |
-| 🔗 Evidence/Sources | Shows supporting information |
-| 🕸️ Knowledge Graph | Supports structured relationships and future reasoning |
-| 💬 Ask Interface | Interactive question-answering |
-| 🧾 History | Keeps previous interactions |
-| 📂 Uploads | Provides a path for user-provided knowledge |
-| 📈 Evaluation | Supports quantitative verification and retrieval evaluation |
+| 🔎 Semantic Retrieval | Finds evidence related to the user's question |
+| 📚 RAG Pipeline | Uses retrieved information as contextual evidence |
+| ⚡ FAISS Search | Performs efficient vector similarity search |
+| 🧪 SciFact Verification | Verifies scientific claims against evidence |
+| 🛡️ Hallucination Mitigation | Rejects or reduces unsupported responses |
+| 📊 Confidence Score | Indicates how strongly the evidence supports the result |
+| ⚠️ Uncertainty Handling | Avoids forcing a confident answer when evidence is weak |
+| 📑 Evidence Display | Shows the evidence used during verification |
+| 🔗 Source Display | Makes the origin of evidence visible |
+| 🕸️ Knowledge Graph | Provides structured concept relationships |
+| 💬 Interactive Chat | Allows users to ask questions through the frontend |
+| 🕘 History | Keeps previous question-answer interactions |
+| 📂 Uploads | Provides a document upload workflow |
+| ⚙️ Settings | Provides application configuration |
 
 ---
 
-# 7. System Architecture
+# 🏗️ 5. System Architecture
 
-## High-Level Architecture
+## 5.1 Complete Architecture
 
 ```mermaid
 flowchart TB
 
-    U[👤 User]
+    USER["👤 USER"]
 
-    subgraph FE["Frontend - React / TanStack Start / Vite"]
-        ASK[Ask a Question]
-        HIST[History]
-        SRC[Sources]
-        KG[Knowledge Graph]
-        UP[Uploads]
-        SET[Settings]
+    subgraph FRONTEND["FRONTEND"]
+        UI["Question / Verification UI"]
+        PAGES["Dashboard • Ask • History • Sources • Knowledge Graph • Uploads"]
     end
 
-    subgraph API["Backend - FastAPI"]
-        ROUTER[API Routes]
-        INT[Integration Service]
-        RAG[RAG Pipeline]
+    subgraph BACKEND["BACKEND - FASTAPI"]
+        API["API ROUTES"]
+        SERVICE["INTEGRATION SERVICE"]
+        PIPELINE["RAG PIPELINE"]
     end
 
-    subgraph RET["Retrieval Layer"]
-        PRE[Preprocessing]
-        EMB[Embeddings]
-        FAISS[FAISS Similarity Search]
-        RANK[Evidence Ranking]
+    subgraph RETRIEVAL["RETRIEVAL LAYER"]
+        CLEAN["Text Preprocessing"]
+        EMB["Embedding Generation"]
+        INDEX["FAISS Vector Index"]
+        SEARCH["Similarity Search"]
+        RANK["Evidence Ranking"]
     end
 
-    subgraph VER["Verification Layer"]
-        CLAIM[Claim Extraction]
-        SF[SciFact Model]
-        STATUS[Supported / Refuted / Uncertain]
-        CONF[Confidence Estimation]
+    subgraph VERIFICATION["VERIFICATION LAYER"]
+        CLAIM["Claim Analysis"]
+        MODEL["SciFact Classifier"]
+        VERIFY["Verification Logic"]
+        CONF["Confidence Estimation"]
     end
 
-    subgraph DATA["Knowledge / Data"]
-        CORPUS[SciFact Corpus]
-        MODEL[Local SciFact Model]
-        GRAPH[Knowledge Graph]
+    subgraph KNOWLEDGE["KNOWLEDGE SOURCES"]
+        CORPUS["SciFact Corpus"]
+        KG["Knowledge Graph"]
+        CHECKPOINT["Local Model Checkpoint"]
     end
 
-    U --> FE
-    FE --> ROUTER
-    ROUTER --> INT
-    INT --> RAG
+    USER --> UI
+    UI --> PAGES
+    PAGES --> API
 
-    RAG --> PRE
-    PRE --> EMB
-    EMB --> FAISS
-    FAISS --> RANK
-    CORPUS --> FAISS
+    API --> SERVICE
+    SERVICE --> PIPELINE
 
+    PIPELINE --> CLEAN
+    CLEAN --> EMB
+    EMB --> INDEX
+    INDEX --> SEARCH
+    SEARCH --> RANK
+
+    CORPUS --> CLEAN
     RANK --> CLAIM
-    CLAIM --> SF
-    MODEL --> SF
-    SF --> STATUS
-    STATUS --> CONF
 
-    GRAPH --> RAG
-    CONF --> RAG
-    RAG --> INT
-    INT --> ROUTER
-    ROUTER --> FE
+    CLAIM --> MODEL
+    CHECKPOINT --> MODEL
+    MODEL --> VERIFY
+    RANK --> VERIFY
+    VERIFY --> CONF
+
+    KG --> PIPELINE
+
+    CONF --> PIPELINE
+    PIPELINE --> SERVICE
+    SERVICE --> API
+    API --> UI
 ```
 
 ---
 
-# 8. End-to-End Workflow
+## 5.2 Layered Architecture
 
-## Step 1 — User asks a question
-
-Example:
+The system is divided into five major layers:
 
 ```text
-What is retrieval augmented generation?
-```
-
-The frontend sends the question to the backend.
-
----
-
-## Step 2 — API receives the request
-
-FastAPI validates the request and forwards it to the application service layer.
-
-```text
-Frontend
-   ↓
-POST /api/...
-   ↓
-Request Model
-   ↓
-Integration Service
-```
-
----
-
-## Step 3 — Retrieve relevant evidence
-
-The retrieval layer:
-
-1. preprocesses the query,
-2. creates/uses semantic representations,
-3. searches the document index,
-4. ranks candidate documents,
-5. returns the most relevant evidence.
-
-```text
-Query
-  ↓
-Preprocessing
-  ↓
-Embedding
-  ↓
-FAISS Search
-  ↓
-Similarity Scores
-  ↓
-Top Evidence
+┌────────────────────────────────────────────────────────────┐
+│                    PRESENTATION LAYER                      │
+│                                                            │
+│   React / TypeScript / TanStack / Vite                     │
+│   Dashboard • Ask • History • Sources • Graph • Uploads   │
+└───────────────────────────────┬────────────────────────────┘
+                                │
+                                ▼
+┌────────────────────────────────────────────────────────────┐
+│                         API LAYER                          │
+│                                                            │
+│                       FastAPI                              │
+│       Request Models • Routes • Health • Services         │
+└───────────────────────────────┬────────────────────────────┘
+                                │
+                                ▼
+┌────────────────────────────────────────────────────────────┐
+│                    APPLICATION LAYER                       │
+│                                                            │
+│                    Integration Service                    │
+│                       RAG Pipeline                         │
+└───────────────────────────────┬────────────────────────────┘
+                                │
+                    ┌───────────┴───────────┐
+                    ▼                       ▼
+┌─────────────────────────────┐   ┌─────────────────────────┐
+│      RETRIEVAL LAYER        │   │    VERIFICATION LAYER   │
+│                             │   │                         │
+│ Preprocessing               │   │ Claim Analysis          │
+│ Embeddings                  │   │ SciFact Model           │
+│ FAISS                       │   │ Verification Logic      │
+│ Similarity Search           │   │ Confidence              │
+│ Evidence Ranking            │   │ Uncertainty             │
+└──────────────┬──────────────┘   └────────────┬────────────┘
+               │                               │
+               └──────────────┬────────────────┘
+                              ▼
+┌────────────────────────────────────────────────────────────┐
+│                    KNOWLEDGE / DATA LAYER                  │
+│                                                            │
+│ SciFact Corpus • Local Model • Knowledge Graph             │
+└────────────────────────────────────────────────────────────┘
 ```
 
 ---
 
-## Step 4 — Analyze claims
+# 🔄 6. End-to-End Workflow
 
-The system identifies the factual claim that needs verification.
+The complete question-answering process is:
 
-For example:
+```mermaid
+sequenceDiagram
+    participant U as User
+    participant F as Frontend
+    participant A as FastAPI
+    participant R as RAG Pipeline
+    participant S as Retrieval
+    participant V as Verification
+    participant M as SciFact Model
 
-```text
-Claim:
-"RAG retrieves external documents and uses them as context for generation."
+    U->>F: Ask question
+    F->>A: Send question
+    A->>R: Process request
+    R->>S: Retrieve evidence
+    S-->>R: Ranked evidence
+    R->>V: Verify claim
+    V->>M: Claim + evidence
+    M-->>V: Prediction
+    V-->>R: Verification + confidence
+    R-->>A: Final response
+    A-->>F: Answer + evidence + status
+    F-->>U: Display result
 ```
 
 ---
 
-## Step 5 — Verify
+# 🔎 7. Retrieval Pipeline
 
-The claim is compared with retrieved evidence through the SciFact verification layer.
+Retrieval is the first major reliability layer.
 
-Possible outcomes:
+## Retrieval flow
 
 ```text
-SUPPORTED
-REFUTED
+User Question
+      │
+      ▼
+┌───────────────┐
+│ Preprocessing │
+└───────┬───────┘
+        │
+        ▼
+┌───────────────┐
+│   Embedding   │
+└───────┬───────┘
+        │
+        ▼
+┌───────────────┐
+│ FAISS Index   │
+└───────┬───────┘
+        │
+        ▼
+┌───────────────┐
+│ Similarity    │
+│ Search        │
+└───────┬───────┘
+        │
+        ▼
+┌───────────────┐
+│ Top-K Evidence│
+└───────┬───────┘
+        │
+        ▼
+┌───────────────┐
+│ Evidence      │
+│ Ranking       │
+└───────────────┘
+```
+
+### Why retrieval?
+
+A verification model cannot verify information that is never supplied to it.
+
+Therefore:
+
+> **Retrieval quality directly affects verification quality.**
+
+---
+
+# ⚡ 8. FAISS Similarity Search
+
+FAISS is used for efficient vector similarity search.
+
+The basic process is:
+
+```text
+Documents
+    │
+    ▼
+Text → Embeddings
+    │
+    ▼
+Vector Index
+    │
+    │
+Question → Embedding
+    │
+    ▼
+Similarity Search
+    │
+    ▼
+Top-K Documents
+```
+
+For normalized embeddings, inner-product similarity can correspond to cosine similarity.
+
+The retrieval layer therefore provides candidate evidence for the downstream verification process.
+
+---
+
+# 🧪 9. Claim Verification
+
+Retrieval alone is not enough.
+
+A retrieved document may be:
+
+- related but not actually supportive,
+- partially relevant,
+- contradictory,
+- or unrelated.
+
+The verification stage therefore evaluates the relationship between:
+
+```text
+CLAIM
+  +
+EVIDENCE
+  ↓
+VERIFICATION
+```
+
+---
+
+# 🔬 10. SciFact Verification
+
+The project uses a local SciFact-based sequence classification model for factual verification.
+
+## Verification architecture
+
+```mermaid
+flowchart LR
+    CLAIM["Claim"] --> TOKEN["Tokenizer"]
+    EVIDENCE["Retrieved Evidence"] --> TOKEN
+
+    TOKEN --> BERT["BERT Sequence Classifier"]
+
+    BERT --> PRED["Prediction"]
+
+    PRED --> SUP["SUPPORTED"]
+    PRED --> REF["REFUTED"]
+
+    PRED --> LOGIC["Application Verification Logic"]
+    LOGIC --> UNC["UNCERTAIN"]
+```
+
+The current local checkpoint configuration determines the classifier labels.
+
+For a two-class checkpoint:
+
+```text
+0 → SUPPORTED
+1 → REFUTED
+```
+
+The application can additionally produce:
+
+```text
 UNCERTAIN
 ```
 
-The exact classifier labels depend on the loaded checkpoint. The current local SciFact checkpoint is treated according to its actual configuration rather than assuming unsupported labels.
+when the available evidence or verification confidence does not justify a definitive conclusion.
+
+This distinction is important because **UNCERTAIN is an application-level reliability state, not necessarily a third neural classifier output**.
 
 ---
 
-## Step 6 — Calculate confidence
+# 🛡️ 11. Hallucination Mitigation Logic
 
-Confidence combines available evidence and verification signals.
+The system does not assume that every retrieved result is correct.
 
-A low-confidence answer should not be presented as a highly certain fact.
-
----
-
-## Step 7 — Generate final response
-
-The response should be:
-
-- relevant,
-- evidence-grounded,
-- transparent,
-- and appropriately uncertain.
-
----
-
-## Step 8 — Display evidence
-
-The frontend presents:
+Instead:
 
 ```text
-Answer
-──────
-Verification Status
-Confidence
-Evidence
-Sources
+              RETRIEVED EVIDENCE
+                       │
+                       ▼
+              ┌─────────────────┐
+              │ Is evidence     │
+              │ relevant?       │
+              └────────┬────────┘
+                       │
+             ┌─────────┴─────────┐
+             │                   │
+            YES                  NO
+             │                   │
+             ▼                   ▼
+       VERIFY CLAIM          UNCERTAIN
+             │
+       ┌─────┴─────┐
+       │           │
+   SUPPORTED    REFUTED
+       │           │
+       ▼           ▼
+    Answer     Correct / Reject
 ```
 
-This gives the user an opportunity to inspect the basis of the response.
+This provides multiple opportunities to prevent unsupported information from reaching the user.
 
 ---
 
-# 9. Verification Strategy
+# 📊 12. Confidence Estimation
 
-The verification layer is designed around factual consistency.
+The confidence layer combines the available reliability signals.
 
-## Verification states
-
-### 🟢 SUPPORTED
-
-The available evidence supports the claim with sufficient confidence.
-
-### 🔴 REFUTED
-
-The available evidence contradicts the claim.
-
-### 🟡 UNCERTAIN
-
-The evidence is insufficient, ambiguous, weak, or does not justify a confident conclusion.
-
-The system should prefer:
+Conceptually:
 
 ```text
+Similarity
+     │
+     ├──────────────┐
+     │              │
+Evidence Coverage  │
+     │              │
+     ├──────────────┤
+     │              │
+Verification Result│
+     │              │
+     └──────┬───────┘
+            ▼
+     CONFIDENCE SCORE
+            │
+       ┌────┴────┐
+       ▼         ▼
+    Sufficient  Insufficient
+       │         │
+       ▼         ▼
+    ANSWER    UNCERTAIN
+```
+
+A confidence score should be interpreted as a **system reliability signal**, not automatically as a calibrated probability.
+
+Calibration must be experimentally measured before making stronger probabilistic claims.
+
+---
+
+# ⚠️ 13. Uncertainty Handling
+
+One of the most important design decisions is allowing the system to say:
+
+> **The available evidence is insufficient for a confident answer.**
+
+Instead of:
+
+```text
+Weak Evidence
+     ↓
+Confident Answer ❌
+```
+
+the system should behave as:
+
+```text
+Weak Evidence
+     ↓
+Low Confidence
+     ↓
 UNCERTAIN
+     ↓
+Ask for better evidence / provide limited response
 ```
 
-over:
+This is a central part of hallucination mitigation.
+
+---
+
+# 🕸️ 14. Knowledge Graph
+
+The system includes a knowledge graph component for representing relationships between concepts.
+
+Conceptually:
 
 ```text
-Unsupported confident answer
+                 ┌─────────────┐
+                 │  Concept A  │
+                 └──────┬──────┘
+                        │
+             ┌──────────┼──────────┐
+             │          │          │
+             ▼          ▼          ▼
+          related     causes     part-of
+             │          │          │
+             ▼          ▼          ▼
+        Concept B   Concept C   Concept D
+```
+
+The knowledge graph can support future:
+
+- relationship-aware retrieval,
+- multi-hop reasoning,
+- entity linking,
+- contradiction analysis,
+- explainable reasoning paths.
+
+It is designed as a complementary knowledge source rather than a replacement for evidence verification.
+
+---
+
+# 🖥️ 15. Frontend
+
+The frontend provides the user-facing interface.
+
+## Main application areas
+
+```text
+┌───────────────────────────────────────────────┐
+│              AI HALLUCINATION                 │
+│              MITIGATION SYSTEM                │
+├───────────────┬───────────────────────────────┤
+│               │                               │
+│ Dashboard     │                               │
+│               │       Main Workspace          │
+│ New Verify    │                               │
+│               │       Question                │
+│ Ask Question  │       ↓                       │
+│               │       Evidence                │
+│ Knowledge     │       ↓                       │
+│ Graph         │       Verification            │
+│               │       ↓                       │
+│ Sources       │       Confidence              │
+│               │       ↓                       │
+│ History       │       Final Answer             │
+│               │                               │
+│ Uploads       │                               │
+│               │                               │
+│ Settings      │                               │
+└───────────────┴───────────────────────────────┘
+```
+
+The interface is designed around the idea that the answer should not be separated from the evidence behind it.
+
+---
+
+# 🧩 16. Backend Architecture
+
+The backend is organized into separate responsibilities.
+
+```text
+backend/
+│
+├── api/
+│   ├── app.py
+│   ├── config.py
+│   ├── dependencies.py
+│   ├── middleware/
+│   ├── models/
+│   ├── routes/
+│   ├── services/
+│   └── utils/
+│
+├── preprocessing/
+│   ├── embeddings.py
+│   ├── preprocess.py
+│   └── text_cleaning.py
+│
+├── retrieval/
+│   ├── faiss_index.py
+│   ├── rag_pipeline.py
+│   ├── retrieve.py
+│   └── scifact_documents.py
+│
+├── response_generation/
+│   ├── formatter.py
+│   └── generator.py
+│
+├── verification/
+│   ├── knowledge_graph.py
+│   ├── verifier.py
+│   └── scifact/
+│       ├── dataset_loader.py
+│       ├── evaluate.py
+│       ├── inference.py
+│       ├── labels.py
+│       ├── metrics.py
+│       ├── model.py
+│       ├── preprocess.py
+│       ├── train.py
+│       └── verifier.py
+│
+└── tests/
 ```
 
 ---
 
-# 10. Technology Stack
-
-## Frontend
-
-- React
-- TypeScript
-- TanStack Start / TanStack Router
-- Vite
-- Tailwind CSS
-- Radix UI
-- Lucide React
-- React Query
-- Recharts
-- Sonner
-
-## Backend
-
-- Python
-- FastAPI
-- Uvicorn
-- Pydantic
-- PyTorch
-- Transformers
-
-## Retrieval / NLP
-
-- Sentence Transformers / semantic embeddings where configured
-- FAISS
-- NumPy
-- Scikit-learn
-- NLP preprocessing
-
-## Verification
-
-- SciFact dataset
-- BERT-based sequence classification
-- PyTorch
-- Hugging Face Transformers
-
-## Development
-
-- Git
-- GitHub
-- VS Code
-- Python virtual environment
-- npm / Bun-compatible frontend configuration
-
----
-
-# 11. Project Structure
-
-A representative structure is:
+# 📁 17. Project Structure
 
 ```text
 AI_Hallucination_Mitigation/
 │
 ├── backend/
 │   ├── api/
-│   │   ├── app.py
-│   │   ├── config.py
-│   │   ├── dependencies.py
-│   │   ├── models/
-│   │   ├── routes/
-│   │   ├── services/
-│   │   ├── middleware/
-│   │   └── utils/
-│   │
 │   ├── preprocessing/
-│   │   ├── embeddings.py
-│   │   ├── preprocess.py
-│   │   └── text_cleaning.py
-│   │
 │   ├── retrieval/
-│   │   ├── faiss_index.py
-│   │   ├── retrieve.py
-│   │   ├── rag_pipeline.py
-│   │   └── scifact_documents.py
-│   │
 │   ├── response_generation/
-│   │   ├── formatter.py
-│   │   └── generator.py
-│   │
 │   ├── verification/
-│   │   ├── knowledge_graph.py
-│   │   ├── verifier.py
-│   │   └── scifact/
-│   │       ├── dataset_loader.py
-│   │       ├── evaluate.py
-│   │       ├── inference.py
-│   │       ├── labels.py
-│   │       ├── metrics.py
-│   │       ├── model.py
-│   │       ├── preprocess.py
-│   │       ├── train.py
-│   │       └── verifier.py
-│   │
-│   ├── tests/
-│   └── requirements.txt
+│   └── tests/
 │
 ├── frontend/
 │   ├── public/
-│   ├── src/
-│   │   ├── components/
-│   │   ├── hooks/
-│   │   ├── lib/
-│   │   ├── routes/
-│   │   ├── data/
-│   │   ├── router.tsx
-│   │   ├── server.ts
-│   │   ├── start.ts
-│   │   └── styles.css
-│   ├── package.json
-│   ├── vite.config.ts
-│   └── tsconfig.json
+│   └── src/
+│       ├── components/
+│       ├── hooks/
+│       ├── lib/
+│       ├── routes/
+│       └── styles.css
 │
 ├── data/
 │   └── scifact/
@@ -593,7 +705,6 @@ AI_Hallucination_Mitigation/
 │   └── scifact-sanity/
 │
 ├── notebooks/
-│
 ├── tests/
 │
 ├── README.md
@@ -601,271 +712,43 @@ AI_Hallucination_Mitigation/
 └── .gitignore
 ```
 
-> Large datasets, downloaded model weights, virtual environments, caches, and generated artifacts should generally be kept outside Git unless project policy explicitly requires them.
-
 ---
 
-# 12. Frontend
+# 🔌 18. API Layer
 
-The frontend provides the user-facing interface for the verification system.
+FastAPI acts as the communication layer between the frontend and the AI pipeline.
 
-## Main screens
-
-### 🏠 Dashboard
-
-Provides a high-level view of the application.
-
-### 💬 Ask a Question
-
-Primary question-answering interface.
-
-### 🧪 New Verification
-
-Provides a dedicated verification workflow.
-
-### 🕸️ Knowledge Graph
-
-Visualizes relationships between concepts where graph data is available.
-
-### 📚 Sources
-
-Allows users to inspect evidence associated with responses.
-
-### 🕘 History
-
-Provides access to previous questions and answers.
-
-### 📂 Uploads
-
-Supports document/data upload workflows where implemented.
-
-### ⚙️ Settings
-
-Application configuration and user preferences.
-
-### ℹ️ About
-
-Project information.
-
----
-
-# 13. Backend
-
-The backend is implemented using FastAPI.
-
-Its responsibilities include:
-
-- request validation,
-- API routing,
-- application orchestration,
-- retrieval,
-- verification,
-- response formatting,
-- confidence calculation,
-- history integration,
-- health monitoring.
-
-## Backend layers
+## Basic architecture
 
 ```text
-API Layer
-   ↓
-Service Layer
-   ↓
+Frontend
+   │
+   │ HTTP
+   ▼
+FastAPI
+   │
+   ▼
+Routes
+   │
+   ▼
+Integration Service
+   │
+   ▼
 RAG Pipeline
-   ↓
-Retrieval + Verification
-   ↓
-Response Formatting
+   │
+   ├── Retrieval
+   ├── Verification
+   ├── Confidence
+   └── Response
 ```
-
-This separation makes the system easier to test and extend.
 
 ---
 
-# 14. Retrieval and RAG
+# ❤️ 19. Health Check
 
-## Retrieval-Augmented Generation
-
-RAG connects generation with external evidence.
-
-Instead of:
+The backend exposes a health endpoint.
 
 ```text
-Question → Model Memory → Answer
-```
-
-the system follows:
-
-```text
-Question
-   ↓
-Search
-   ↓
-Evidence
-   ↓
-Context
-   ↓
-Verification
-   ↓
-Answer
-```
-
-## Why retrieval matters
-
-Retrieval provides a mechanism for:
-
-- grounding responses,
-- reducing unsupported claims,
-- exposing evidence,
-- updating knowledge without retraining the entire model,
-- and separating knowledge retrieval from response generation.
-
----
-
-## FAISS
-
-FAISS is used for vector similarity search where configured.
-
-Conceptually:
-
-```text
-Document
-   ↓
-Embedding
-   ↓
-Vector Index
-
-Question
-   ↓
-Embedding
-   ↓
-Similarity Search
-   ↓
-Top-K Documents
-```
-
-For normalized vectors, inner-product similarity can be used as a cosine-similarity equivalent.
-
----
-
-# 15. SciFact Verification
-
-SciFact is used as the factual verification component of the project.
-
-The verification task is based on comparing:
-
-```text
-Claim + Evidence
-```
-
-and determining whether the evidence supports or contradicts the claim.
-
-## Model pipeline
-
-```mermaid
-flowchart LR
-    A[Claim] --> C[Tokenizer]
-    B[Evidence] --> C
-    C --> D[Local BERT Classifier]
-    D --> E[Prediction]
-    E --> F[Verification Layer]
-    F --> G[SUPPORTED]
-    F --> H[REFUTED]
-    F --> I[UNCERTAIN]
-```
-
-### Important implementation detail
-
-The local model checkpoint must always be interpreted according to its actual configuration.
-
-If a checkpoint contains:
-
-```text
-0 → SUPPORTED
-1 → REFUTED
-```
-
-it must not be treated as a three-class model merely because the application conceptually supports an `UNCERTAIN` state.
-
-`UNCERTAIN` can be determined by the surrounding evidence/confidence logic when appropriate.
-
----
-
-# 16. Confidence and Uncertainty
-
-A reliable system should distinguish:
-
-```text
-High evidence
-     ↓
-High confidence
-```
-
-from:
-
-```text
-Weak evidence
-     ↓
-Low confidence
-     ↓
-UNCERTAIN
-```
-
-A conceptual confidence pipeline is:
-
-```mermaid
-flowchart LR
-    A[Similarity] --> D[Confidence Layer]
-    B[Evidence Coverage] --> D
-    C[Verification Result] --> D
-    D --> E[Confidence Score]
-    E --> F{Threshold}
-    F -->|Enough Evidence| G[Answer]
-    F -->|Insufficient| H[UNCERTAIN]
-```
-
-The exact formula and thresholds should be documented in the implementation and evaluated empirically rather than presented as scientifically validated unless benchmark results support that claim.
-
----
-
-# 17. Knowledge Graph
-
-The project architecture also includes a knowledge graph component.
-
-The original project direction uses structured knowledge and relationship extraction to represent concepts and their relationships.
-
-A knowledge graph can represent:
-
-```text
-Concept A
-    │
-    ├── related_to ──> Concept B
-    │
-    ├── part_of ─────> Concept C
-    │
-    └── causes ──────> Concept D
-```
-
-This can support future improvements such as:
-
-- relationship-aware retrieval,
-- multi-hop reasoning,
-- entity linking,
-- contradiction detection,
-- explainable evidence paths.
-
-The graph should be treated as an additional evidence source rather than as a replacement for factual verification.
-
----
-
-# 18. API
-
-The backend exposes health and application endpoints through FastAPI.
-
-## Health check
-
-```http
 GET /api/health
 ```
 
@@ -878,121 +761,218 @@ Expected response:
 }
 ```
 
-## Root endpoint
+A successful health response confirms that the API process is running and reachable.
 
-```http
-GET /
-```
-
-Expected behavior is a simple service status response.
-
-## Question answering
-
-The exact chat endpoint should be taken from the current backend route definition. The request conceptually contains:
-
-```json
-{
-  "question": "What is retrieval augmented generation?"
-}
-```
-
-and returns an evidence-oriented response containing fields such as:
-
-```json
-{
-  "answer": "...",
-  "verification_status": "SUPPORTED",
-  "confidence_score": 0.0,
-  "sources": [],
-  "evidence": [],
-  "claims": []
-}
-```
-
-> The exact schema is defined by the project's Pydantic response models and should be treated as the source of truth.
+It does not by itself prove that the complete question-answering pipeline is correct.
 
 ---
 
-# 19. Installation
+# 🧠 20. Complete Data Flow
 
-## Prerequisites
+```mermaid
+flowchart LR
 
-Recommended environment:
+    Q["User Question"]
 
-- Python 3.10+
-- Node.js
-- npm
-- Git
-- Windows / Linux / macOS
-- Sufficient storage for NLP models and datasets
+    P["Preprocess"]
 
----
+    E["Embedding"]
 
-## Clone
+    F["FAISS"]
 
-```bash
-git clone <repository-url>
-cd AI_Hallucination_Mitigation
+    R["Retrieve Top-K"]
+
+    K["Rank Evidence"]
+
+    C["Claim"]
+
+    S["SciFact"]
+
+    V["Verification"]
+
+    X["Confidence"]
+
+    O["Response"]
+
+    Q --> P
+    P --> E
+    E --> F
+    F --> R
+    R --> K
+    K --> C
+    C --> S
+    K --> S
+    S --> V
+    V --> X
+    X --> O
 ```
 
 ---
 
-## Backend environment
+# 🔁 21. RAG + Verification Architecture
 
-### Windows PowerShell
+The key architecture can be represented more simply as:
+
+```text
+                         ┌───────────────┐
+                         │    QUESTION   │
+                         └───────┬───────┘
+                                 │
+                                 ▼
+                         ┌───────────────┐
+                         │   RETRIEVER   │
+                         └───────┬───────┘
+                                 │
+                                 ▼
+                         ┌───────────────┐
+                         │    EVIDENCE   │
+                         └───────┬───────┘
+                                 │
+                   ┌─────────────┴─────────────┐
+                   │                           │
+                   ▼                           ▼
+          ┌────────────────┐          ┌────────────────┐
+          │   RAG CONTEXT  │          │ CLAIM + EVIDENCE│
+          └───────┬────────┘          └───────┬────────┘
+                  │                           │
+                  │                           ▼
+                  │                   ┌────────────────┐
+                  │                   │ SciFact Model  │
+                  │                   └───────┬────────┘
+                  │                           │
+                  │                   ┌───────┴────────┐
+                  │                   ▼                ▼
+                  │              SUPPORTED          REFUTED
+                  │                   │                │
+                  └─────────────┬─────┴────────────────┘
+                                ▼
+                       ┌─────────────────┐
+                       │    CONFIDENCE   │
+                       └────────┬────────┘
+                                │
+                                ▼
+                       ┌─────────────────┐
+                       │ FINAL RESPONSE  │
+                       │ + EVIDENCE      │
+                       │ + STATUS        │
+                       └─────────────────┘
+```
+
+---
+
+# 🛠️ 22. Technology Stack
+
+## Frontend
+
+```text
+React
+TypeScript
+TanStack
+Vite
+Tailwind CSS
+Radix UI
+React Query
+Recharts
+Lucide
+```
+
+## Backend
+
+```text
+Python
+FastAPI
+Uvicorn
+Pydantic
+```
+
+## AI / NLP
+
+```text
+PyTorch
+Transformers
+Sentence Transformers
+NumPy
+Scikit-learn
+FAISS
+```
+
+## Verification
+
+```text
+SciFact
+BERT Sequence Classification
+Local Model Checkpoint
+```
+
+---
+
+# 📦 23. Installation
+
+## Requirements
+
+Recommended:
+
+```text
+Python 3.10+
+Node.js
+npm
+Git
+```
+
+Create the Python environment:
 
 ```powershell
 py -3.10 -m venv venv
+```
+
+Activate it:
+
+```powershell
 .\venv\Scripts\Activate.ps1
 ```
 
-### Linux/macOS
+Install backend dependencies:
 
-```bash
-python3 -m venv venv
-source venv/bin/activate
-```
-
-Install dependencies:
-
-```bash
-pip install -r backend/requirements.txt
-```
-
-or, if the root dependency file is authoritative for the environment:
-
-```bash
-pip install -r requirements.txt
+```powershell
+pip install -r backend\requirements.txt
 ```
 
 ---
 
-# 20. Running the System
-
-## Terminal 1 — Backend
+# ▶️ 24. Running the Backend
 
 From the project root:
 
 ```powershell
 .\venv\Scripts\Activate.ps1
+```
+
+Set the Python path:
+
+```powershell
 $env:PYTHONPATH = "$PWD\backend"
+```
+
+Start FastAPI:
+
+```powershell
 python -m uvicorn api.app:app --host 127.0.0.1 --port 8000
 ```
 
 Expected:
 
 ```text
-Uvicorn running on http://127.0.0.1:8000
 Application startup complete.
+Uvicorn running on http://127.0.0.1:8000
 ```
 
-Check:
+Check the root endpoint:
 
 ```text
 http://127.0.0.1:8000/
 ```
 
-and:
+Check health:
 
 ```text
 http://127.0.0.1:8000/api/health
@@ -1000,56 +980,70 @@ http://127.0.0.1:8000/api/health
 
 ---
 
-## Terminal 2 — Frontend
+# ▶️ 25. Running the Frontend
+
+Open another terminal.
 
 ```powershell
 cd frontend
+```
+
+Install packages:
+
+```powershell
 npm install
+```
+
+Start the development server:
+
+```powershell
 npm run dev
 ```
 
-Open the URL displayed by Vite.
-
-For example:
-
-```text
-http://localhost:5173
-```
-
-Then open the Ask page:
-
-```text
-/ask
-```
+Open the development URL shown by Vite.
 
 ---
 
-# 21. Testing
+# 🧪 26. Testing Strategy
 
-Testing should occur at multiple levels.
-
-## Unit testing
-
-Examples:
-
-- preprocessing
-- embedding generation
-- retrieval
-- ranking
-- label mapping
-- confidence calculation
-- response formatting
-
-## Integration testing
-
-The complete pipeline should be tested:
+Testing should cover every major stage.
 
 ```text
-Question
- ↓
+                    TESTING
+                       │
+        ┌──────────────┼──────────────┐
+        ▼              ▼              ▼
+      UNIT         INTEGRATION      E2E
+        │              │              │
+        ▼              ▼              ▼
+ Retrieval        API → RAG       Frontend
+ Verification     RAG → Verify   → API
+ Confidence       Verify → Resp  → Answer
+```
+
+### Unit tests
+
+Test:
+
+- preprocessing,
+- embeddings,
+- retrieval,
+- ranking,
+- label mapping,
+- verification,
+- confidence,
+- response formatting.
+
+### Integration tests
+
+Test:
+
+```text
 API
  ↓
-RAG
+Integration Service
+ ↓
+RAG Pipeline
  ↓
 Retriever
  ↓
@@ -1058,471 +1052,385 @@ Verifier
 Response
 ```
 
-## API testing
+### End-to-end tests
 
-At minimum:
-
-```text
-GET /
-GET /api/health
-POST <question endpoint>
-```
-
-## Frontend testing
-
-Verify:
-
-- question submission,
-- loading state,
-- answer rendering,
-- source rendering,
-- confidence rendering,
-- uncertainty state,
-- history,
-- navigation.
-
----
-
-# 22. Evaluation
-
-A serious hallucination-mitigation system should be evaluated quantitatively.
-
-## Retrieval metrics
-
-### Precision@K
-
-Measures how many retrieved documents are relevant.
-
-### Recall@K
-
-Measures how much relevant evidence is successfully retrieved.
-
-### MRR
-
-Mean Reciprocal Rank measures how high the first relevant result appears.
-
----
-
-## Verification metrics
-
-For supported/refuted classification:
-
-- Accuracy
-- Precision
-- Recall
-- F1-score
-- Confusion Matrix
-
-Example:
+Test:
 
 ```text
-                 Predicted
-              SUPPORTED REFUTED
-Actual
-SUPPORTED       TP        FN
-REFUTED         FP        TN
+User
+ ↓
+Frontend
+ ↓
+Backend
+ ↓
+Retrieval
+ ↓
+Verification
+ ↓
+Response
+ ↓
+Frontend
 ```
 
 ---
 
-## Hallucination metrics
+# 📈 27. Evaluation
 
-A useful evaluation should measure:
+The system should be evaluated using measurable metrics.
 
-- unsupported claim rate,
-- evidence coverage,
-- factual consistency,
-- citation/evidence correctness,
-- uncertainty calibration,
-- answer relevance.
-
----
-
-## Confidence evaluation
-
-Confidence should ideally be evaluated using:
-
-- calibration curves,
-- reliability diagrams,
-- Brier score,
-- expected calibration error (ECE).
-
----
-
-## Important research rule
-
-Do **not** report an accuracy, F1-score, hallucination-reduction percentage, or improvement percentage unless it has actually been measured on a defined evaluation set.
-
----
-
-# 23. Results and Current Validation
-
-## Verified development results
-
-During development, the following components have been successfully validated:
-
-| Component | Status |
-|---|---:|
-| Python 3.10 environment | ✅ |
-| Backend dependencies | ✅ |
-| SciFact document loader | ✅ |
-| RAG pipeline import | ✅ |
-| FastAPI startup | ✅ |
-| Root API | ✅ |
-| `/api/health` | ✅ |
-| Frontend startup | ✅ |
-| Frontend → backend connectivity | ✅ |
-| Evidence-grounded answer correctness | 🔄 Requires final regression validation |
-| Quantitative hallucination benchmark | 🔄 Requires benchmark execution |
-
-The development environment successfully loaded the SciFact corpus with **5,183 documents** during an earlier validation run.
-
-The backend health endpoint returned:
+## Retrieval
 
 ```text
-status: healthy
-service: AI Hallucination Mitigation API
+Precision@K
+Recall@K
+MRR
 ```
 
-with HTTP `200 OK`.
+## Verification
+
+```text
+Accuracy
+Precision
+Recall
+F1-score
+Confusion Matrix
+```
+
+## Hallucination mitigation
+
+Useful measurements include:
+
+```text
+Unsupported Claim Rate
+Evidence Coverage
+Factual Consistency
+Citation Correctness
+Uncertainty Accuracy
+```
+
+## Confidence
+
+Possible calibration measurements include:
+
+```text
+Expected Calibration Error
+Brier Score
+Reliability Diagram
+```
 
 ### Important
 
-At one point during integration testing, the UI returned an unrelated acid-rain response for a question about Retrieval-Augmented Generation. This exposed a genuine end-to-end correctness issue rather than an infrastructure issue.
+No accuracy, F1-score, hallucination reduction percentage, or improvement percentage should be reported unless it has actually been measured on a defined evaluation dataset.
 
-That issue demonstrates why the project must validate:
+---
+
+# 📊 28. Current Development Validation
+
+The following components have been validated during development:
+
+| Component | Status |
+|---|---:|
+| Python environment | ✅ |
+| Backend dependencies | ✅ |
+| SciFact document loader | ✅ |
+| SciFact corpus loading | ✅ |
+| RAG pipeline import | ✅ |
+| SciFact verifier import | ✅ |
+| FastAPI startup | ✅ |
+| Root API endpoint | ✅ |
+| `/api/health` endpoint | ✅ |
+| Frontend project structure | ✅ |
+| Frontend development environment | ✅ |
+| End-to-end response correctness | 🔄 Final regression testing required |
+| Quantitative hallucination benchmark | 🔄 Evaluation required |
+
+A previous development validation successfully loaded **5,183 SciFact documents** from the corpus.
+
+The API health check successfully returned:
+
+```text
+status  : healthy
+service : AI Hallucination Mitigation API
+```
+
+with HTTP status `200 OK`.
+
+---
+
+# ⚠️ 29. Important Development Finding
+
+During integration testing, an incorrect response was observed where a question about Retrieval-Augmented Generation received an unrelated acid-rain response.
+
+This is an important finding because it demonstrates that:
+
+> **A running backend does not necessarily mean the AI pipeline is producing correct answers.**
+
+The system therefore needs final regression testing across:
 
 ```text
 Question
-→ API request
-→ Retrieval
-→ Evidence
-→ Verification
-→ Response
-→ Frontend rendering
-```
-
-rather than considering "backend starts successfully" as proof of correctness.
-
-The final project should only claim end-to-end success after this regression has been resolved and the test suite confirms that unrelated evidence is rejected.
-
----
-
-# 24. Example Interaction
-
-## Example A — Evidence-supported answer
-
-```text
-User:
-What is retrieval augmented generation?
-
-System:
-RAG is a technique that retrieves relevant external
-information and supplies it as context to a language
-model before generating a response.
-
-Verification:
-SUPPORTED
-
-Evidence:
-[Relevant retrieved passage]
-
-Confidence:
-High
-```
-
----
-
-## Example B — Insufficient evidence
-
-```text
-User:
-[Question outside available knowledge]
-
-System:
-The available evidence is insufficient to provide
-a confident answer.
-
-Verification:
-UNCERTAIN
-
-Evidence:
-[Weak / insufficient evidence]
-
-Confidence:
-Low
-```
-
-This behavior is intentional.
-
-The system should prefer:
-
-> "I don't have enough evidence."
-
-over:
-
-> "Here is a plausible but unsupported answer."
-
----
-
-# 25. Research Contribution
-
-The project combines multiple reliability mechanisms into a single pipeline.
-
-## Contribution 1 — Evidence-first answering
-
-Answers are grounded in retrieved information rather than relying solely on generative model memory.
-
-## Contribution 2 — Retrieval + verification
-
-Retrieval alone does not guarantee correctness.
-
-The project adds a separate verification stage.
-
-```text
-Retrieve
-   +
-Verify
-   =
-More reliable answering
-```
-
-## Contribution 3 — Explicit uncertainty
-
-The system provides an uncertainty state instead of forcing every question into a confident answer.
-
-## Contribution 4 — Explainability
-
-Users can inspect evidence and sources behind the response.
-
-## Contribution 5 — Modular architecture
-
-The system separates:
-
-```text
-Frontend
-Backend
+   ↓
+API Request
+   ↓
+Query Processing
+   ↓
 Retrieval
-Verification
-Generation
-Evaluation
+   ↓
+Evidence Ranking
+   ↓
+Claim Verification
+   ↓
+Confidence
+   ↓
+Response Generation
+   ↓
+Frontend Rendering
 ```
 
-This allows individual components to be improved independently.
+The final system should reject unrelated evidence rather than confidently returning it.
 
 ---
 
-# 26. Limitations
+# 🚧 30. Limitations
 
-The current system has important limitations.
+### 1. Retrieval dependency
 
-### Dataset limitations
+If the retriever returns poor evidence, downstream verification can also be affected.
 
-The quality of answers depends on the quality and coverage of the available corpus.
+### 2. Domain limitation
 
-### Retrieval limitations
+SciFact is focused on scientific claims. Its behavior may not generalize equally to every domain.
 
-A verifier cannot recover evidence that the retriever fails to retrieve.
+### 3. Dataset coverage
+
+Questions outside the knowledge contained in the available corpus may produce insufficient evidence.
+
+### 4. Confidence calibration
+
+A raw confidence score should not automatically be interpreted as a mathematically calibrated probability.
+
+### 5. Model dependency
+
+Verification quality depends on the quality and compatibility of the local checkpoint.
+
+### 6. Generation dependency
+
+Even when evidence is available, response generation must remain grounded in that evidence.
+
+---
+
+# 🚀 31. Future Enhancements
+
+Future versions can improve the system through:
 
 ```text
-Bad retrieval
-    ↓
-Bad evidence
-    ↓
-Bad verification context
+Hybrid Retrieval
+      ↓
+Keyword + Vector Search
 ```
-
-### Model limitations
-
-The SciFact model is trained for scientific claim verification and may not generalize equally well to every domain.
-
-### Confidence limitations
-
-A confidence score is not automatically a calibrated probability.
-
-Calibration must be experimentally evaluated.
-
-### Knowledge graph limitations
-
-A knowledge graph is only as useful as its entity extraction, relationship quality, and source reliability.
-
-### Generative limitations
-
-Even with retrieval and verification, response generation must remain constrained by evidence.
-
----
-
-# 27. Future Enhancements
-
-Possible future improvements include:
-
-- 🔬 stronger claim decomposition,
-- 🧠 larger and better-calibrated verification models,
-- 🌐 multi-source web retrieval,
-- 🕸️ graph-based multi-hop reasoning,
-- 🔎 hybrid keyword + vector retrieval,
-- 📚 domain-specific corpora,
-- 🧮 learned evidence ranking,
-- 📊 automated hallucination benchmarks,
-- 🎯 confidence calibration,
-- 🔐 source trust scoring,
-- 🧾 citation-level verification,
-- 🌍 multilingual support,
-- ⚡ asynchronous retrieval,
-- 🗄️ persistent vector databases,
-- 📈 monitoring and evaluation dashboards,
-- 🧪 adversarial hallucination testing.
-
----
-
-# 28. Team Roles
-
-For a four-member academic project, responsibilities can be organized as:
-
-| Role | Main Responsibility |
-|---|---|
-| Member 1 | Frontend, UI/UX, user interaction, API integration |
-| Member 2 | Backend, FastAPI, service integration, API design |
-| Member 3 | Retrieval, preprocessing, embeddings, FAISS, RAG |
-| Member 4 | SciFact verification, model training/evaluation, confidence |
-
-All members contribute to:
-
-- system integration,
-- testing,
-- documentation,
-- research paper,
-- presentation,
-- final evaluation.
-
----
-
-# 29. Reproducibility
-
-To reproduce the system:
-
-1. Use the documented Python version.
-2. Create a clean virtual environment.
-3. Install the pinned/project dependencies.
-4. Restore required datasets.
-5. Restore compatible local model checkpoints.
-6. Set `PYTHONPATH` correctly.
-7. Start FastAPI.
-8. Start the frontend.
-9. Run tests.
-10. Execute the evaluation suite.
-
-Large local assets such as:
 
 ```text
-venv/
-models/
-data/
-node_modules/
+Better Claim Decomposition
+      ↓
+Multiple Claims per Response
+      ↓
+Individual Verification
 ```
 
-should normally not be committed to Git unless explicitly required.
+```text
+Knowledge Graph
+      ↓
+Multi-Hop Evidence
+      ↓
+Graph-Aware Verification
+```
+
+Other possible enhancements:
+
+- stronger verification models,
+- larger domain-specific corpora,
+- web-based retrieval,
+- source trust scoring,
+- citation-level verification,
+- multilingual support,
+- improved confidence calibration,
+- adversarial hallucination testing,
+- persistent vector databases,
+- evaluation dashboards,
+- real-time monitoring.
 
 ---
 
-# 30. Academic Context
+# 🔬 32. Research Significance
 
-This project is intended as an academic/research implementation of an AI reliability pipeline.
+The project focuses on an important reliability problem in modern generative AI.
 
-The major research themes are:
+Its central research direction is:
+
+```text
+GENERATIVE AI
+      │
+      ▼
+      RAG
+      │
+      ▼
+EVIDENCE RETRIEVAL
+      │
+      ▼
+FACT VERIFICATION
+      │
+      ▼
+CONFIDENCE
+      │
+      ▼
+RELIABLE RESPONSE
+```
+
+The system demonstrates how retrieval and verification can be combined to make AI responses more transparent and evidence-oriented.
+
+---
+
+# 📚 33. Academic Concepts Covered
+
+The project brings together:
 
 - Artificial Intelligence
 - Natural Language Processing
-- Retrieval-Augmented Generation
 - Information Retrieval
-- Fact Verification
+- Retrieval-Augmented Generation
+- Semantic Search
+- Vector Databases
+- FAISS
+- Claim Verification
+- SciFact
+- BERT
 - Knowledge Graphs
 - Explainable AI
+- Confidence Estimation
 - AI Reliability
-- Hallucination Detection and Mitigation
-
-The system is suitable as a foundation for:
-
-- final-year engineering projects,
-- research demonstrations,
-- IEEE-style conference work,
-- experimental RAG studies,
-- AI reliability evaluation.
+- Hallucination Mitigation
 
 ---
 
-# 31. License
+# 🧭 34. Design Philosophy
 
-This project is intended for academic and research purposes.
+The project follows five principles:
 
-Add the project's final license here, for example:
+### 1. Retrieve before answering
 
 ```text
-MIT License
+No evidence → No confident answer
 ```
 
-if the repository is officially released under MIT.
+### 2. Verify factual claims
+
+```text
+Evidence ≠ automatic truth
+```
+
+### 3. Show the evidence
+
+```text
+Answer + Evidence
+```
+
+is better than:
+
+```text
+Answer only
+```
+
+### 4. Communicate uncertainty
+
+```text
+Insufficient evidence
+        ↓
+UNCERTAIN
+```
+
+### 5. Separate system responsibilities
+
+```text
+Frontend
+   ↓
+API
+   ↓
+Services
+   ↓
+Retrieval
+   ↓
+Verification
+   ↓
+Response
+```
+
+This makes the system easier to debug, evaluate, and extend.
 
 ---
 
-# ⭐ Final Design Philosophy
+# 🏁 35. Final System Concept
 
-The project is built around one simple idea:
-
-```text
-┌──────────────────────────────────────────────────────┐
-│                                                      │
-│       DON'T JUST GENERATE AN ANSWER.                │
-│                                                      │
-│       RETRIEVE THE EVIDENCE.                         │
-│       VERIFY THE CLAIM.                              │
-│       MEASURE THE CONFIDENCE.                        │
-│       SHOW THE SOURCE.                               │
-│       ADMIT UNCERTAINTY.                             │
-│                                                      │
-└──────────────────────────────────────────────────────┘
-```
-
-### AI Hallucination Mitigation
+The complete project can be summarized as:
 
 ```text
-           QUESTION
-               │
-               ▼
-        ┌───────────────┐
-        │   RETRIEVE    │
-        └───────┬───────┘
-                │
-                ▼
-        ┌───────────────┐
-        │    EVIDENCE   │
-        └───────┬───────┘
-                │
-                ▼
-        ┌───────────────┐
-        │    VERIFY     │
-        └───────┬───────┘
-                │
-          ┌─────┴─────┐
-          │           │
-       SUPPORTED    UNCERTAIN
-          │           │
-          ▼           ▼
-       ANSWER       ADMIT IT
-          │           │
-          └─────┬─────┘
-                ▼
-        ┌───────────────┐
-        │ SOURCE +      │
-        │ CONFIDENCE    │
-        └───────────────┘
+┌──────────────────────────────────────────────────────────┐
+│                                                          │
+│                  AI HALLUCINATION                        │
+│                     MITIGATION                           │
+│                                                          │
+│   ┌────────────┐                                         │
+│   │  QUESTION  │                                         │
+│   └─────┬──────┘                                         │
+│         │                                                │
+│         ▼                                                │
+│   ┌────────────┐                                         │
+│   │  RETRIEVE  │                                         │
+│   └─────┬──────┘                                         │
+│         │                                                │
+│         ▼                                                │
+│   ┌────────────┐                                         │
+│   │  EVIDENCE  │                                         │
+│   └─────┬──────┘                                         │
+│         │                                                │
+│         ▼                                                │
+│   ┌────────────┐                                         │
+│   │   VERIFY   │                                         │
+│   └─────┬──────┘                                         │
+│         │                                                │
+│    ┌────┴─────┐                                          │
+│    ▼          ▼                                          │
+│ SUPPORTED  REFUTED                                       │
+│    │          │                                          │
+│    └────┬─────┘                                          │
+│         │                                                │
+│         ▼                                                │
+│   ┌────────────┐                                         │
+│   │ CONFIDENCE │                                         │
+│   └─────┬──────┘                                         │
+│         │                                                │
+│    ┌────┴─────┐                                          │
+│    ▼          ▼                                          │
+│  ANSWER    UNCERTAIN                                     │
+│    │          │                                          │
+│    └────┬─────┘                                          │
+│         ▼                                                │
+│   ┌────────────┐                                         │
+│   │  EVIDENCE  │                                         │
+│   │  + SOURCE  │                                         │
+│   └────────────┘                                         │
+│                                                          │
+└──────────────────────────────────────────────────────────┘
 ```
-
-> **Trust should come from evidence, not confidence of wording.**
 
 ---
+
+# ⭐ Core Message
 
 <p align="center">
-  <b>AI Hallucination Mitigation System</b><br>
-  <i>Retrieve • Verify • Explain • Trust</i>
+  <b>RETRIEVE → VERIFY → MEASURE → EXPLAIN</b>
+</p>
+
+<p align="center">
+  The goal is not simply to make AI generate better answers.<br>
+  The goal is to make AI answers <b>more evidence-grounded, transparent, and reliable.</b>
 </p>
