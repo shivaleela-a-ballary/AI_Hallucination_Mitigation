@@ -621,9 +621,59 @@ The frontend provides the user-facing interface.
 The interface is designed around the idea that the answer should not be separated from the evidence behind it.
 
 ---
+
+# 🧩 16. Backend Architecture
+
+The backend is organized into separate responsibilities.
+
+```text
+backend/
+│
+├── api/
+│   ├── app.py
+│   ├── config.py
+│   ├── dependencies.py
+│   ├── middleware/
+│   ├── models/
+│   ├── routes/
+│   ├── services/
+│   └── utils/
+│
+├── preprocessing/
+│   ├── embeddings.py
+│   ├── preprocess.py
+│   └── text_cleaning.py
+│
+├── retrieval/
+│   ├── faiss_index.py
+│   ├── rag_pipeline.py
+│   ├── retrieve.py
+│   └── scifact_documents.py
+│
+├── response_generation/
+│   ├── formatter.py
+│   └── generator.py
+│
+├── verification/
+│   ├── knowledge_graph.py
+│   ├── verifier.py
+│   └── scifact/
+│       ├── dataset_loader.py
+│       ├── evaluate.py
+│       ├── inference.py
+│       ├── labels.py
+│       ├── metrics.py
+│       ├── model.py
+│       ├── preprocess.py
+│       ├── train.py
+│       └── verifier.py
+│
+└── tests/
+```
+
 ---
 
-# 🔌 16. API Layer
+# 🔌 18. API Layer
 
 FastAPI acts as the communication layer between the frontend and the AI pipeline.
 
@@ -653,7 +703,7 @@ RAG Pipeline
 
 ---
 
-# ❤️ 17. Health Check
+# ❤️ 19. Health Check
 
 The backend exposes a health endpoint.
 
@@ -676,7 +726,7 @@ It does not by itself prove that the complete question-answering pipeline is cor
 
 ---
 
-# 🧠 18. Complete Data Flow
+# 🧠 20. Complete Data Flow
 
 ```mermaid
 flowchart LR
@@ -718,7 +768,7 @@ flowchart LR
 
 ---
 
-# 🔁 19. RAG + Verification Architecture
+# 🔁 21. RAG + Verification Architecture
 
 The key architecture can be represented more simply as:
 
@@ -769,7 +819,7 @@ The key architecture can be represented more simply as:
 
 ---
 
-# 🛠️ 20. Technology Stack
+# 🛠️ 22. Technology Stack
 
 ## Frontend
 
@@ -815,7 +865,7 @@ Local Model Checkpoint
 
 ---
 
-# 📦 21. Installation
+# 📦 23. Installation
 
 ## Requirements
 
@@ -848,7 +898,7 @@ pip install -r backend\requirements.txt
 
 ---
 
-# ▶️ 22. Running the Backend
+# ▶️ 24. Running the Backend
 
 From the project root:
 
@@ -889,7 +939,7 @@ http://127.0.0.1:8000/api/health
 
 ---
 
-# ▶️ 23. Running the Frontend
+# ▶️ 25. Running the Frontend
 
 Open another terminal.
 
@@ -913,7 +963,7 @@ Open the development URL shown by Vite.
 
 ---
 
-# 🧪 24. Testing Strategy
+# 🧪 26. Testing Strategy
 
 Testing should cover every major stage.
 
@@ -983,7 +1033,7 @@ Frontend
 
 ---
 
-# 📈 25. Evaluation
+# 📈 27. Evaluation
 
 The system should be evaluated using measurable metrics.
 
@@ -1033,7 +1083,7 @@ No accuracy, F1-score, hallucination reduction percentage, or improvement percen
 
 ---
 
-# 📊 26. Current Development Validation
+# 📊 28. Current Development Validation
 
 The following components have been validated during development:
 
@@ -1066,7 +1116,7 @@ with HTTP status `200 OK`.
 
 ---
 
-# ⚠️ 27. Important Development Finding
+# ⚠️ 29. Important Development Finding
 
 During integration testing, an incorrect response was observed where a question about Retrieval-Augmented Generation received an unrelated acid-rain response.
 
@@ -1100,7 +1150,7 @@ The final system should reject unrelated evidence rather than confidently return
 
 ---
 
-# 🚧 28. Limitations
+# 🚧 30. Limitations
 
 ### 1. Retrieval dependency
 
@@ -1128,7 +1178,7 @@ Even when evidence is available, response generation must remain grounded in tha
 
 ---
 
-# 🚀 29. Future Enhancements
+# 🚀 31. Future Enhancements
 
 Future versions can improve the system through:
 
@@ -1170,7 +1220,7 @@ Other possible enhancements:
 
 ---
 
-# 🔬 30. Research Significance
+# 🔬 32. Research Significance
 
 The project focuses on an important reliability problem in modern generative AI.
 
@@ -1197,10 +1247,9 @@ RELIABLE RESPONSE
 
 The system demonstrates how retrieval and verification can be combined to make AI responses more transparent and evidence-oriented.
 
-
 ---
 
-# 🧭 31. Design Philosophy
+# 🧭 34. Design Philosophy
 
 The project follows five principles:
 
@@ -1256,7 +1305,7 @@ This makes the system easier to debug, evaluate, and extend.
 
 ---
 
-# 🏁 32. Final System Concept
+# 🏁 35. Final System Concept
 
 The complete project can be summarized as:
 
