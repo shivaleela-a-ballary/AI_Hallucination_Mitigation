@@ -8,6 +8,7 @@ from enum import Enum
 from typing import Sequence
 
 from retrieval.retrieve import RetrievedDocument
+from .scifact.inference import SciFactInference
 
 
 class VerificationStatus(str, Enum):
@@ -62,4 +63,32 @@ class BaselineSciFactVerifier:
             else:
                 status = VerificationStatus.UNCERTAIN
             results.append(ClaimVerification(claim.text, status, evidence_titles, top_score))
+        return results
+
+
+class LocalSciFactVerifier:
+    """Verification backed by the project's local, trained SciFact checkpoint."""
+
+    def __init__(self, model_path: str) -> None:
+        self.inference = SciFactInference(model_path)
+
+    def extract_claims(self, text: str, evidence: Sequence[RetrievedDocument]) -> list[Claim]:
+        sentences = [part.strip() for part in re.split(r"(?<=[.!?])\s+", text) if part.strip()]
+        return [Claim(text=sentence, evidence_titles=[item.title for item in evidence]) for sentence in sentences]
+
+    def verify(self, claims: Sequence[Claim], evidence: Sequence[RetrievedDocument]) -> list[ClaimVerification]:
+        if not evidence:
+            return [ClaimVerification(claim.text, VerificationStatus.UNCERTAIN, [], 0.0, "local SciFact checkpoint") for claim in claims]
+        evidence_text = "\n".join(item.content for item in evidence)
+        titles = [item.title for item in evidence]
+        results: list[ClaimVerification] = []
+        for claim in claims:
+            prediction = self.inference.predict(claim.text, evidence_text)
+            results.append(ClaimVerification(
+                claim=claim.text,
+                status=VerificationStatus(prediction.label),
+                evidence_titles=titles,
+                evidence_score=prediction.confidence,
+                method="local SciFact checkpoint",
+            ))
         return results

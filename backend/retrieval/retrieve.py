@@ -22,6 +22,7 @@ class Document:
     title: str
     content: str
     source: str
+    url: str | None = None
 
 
 @dataclass(frozen=True)
@@ -32,45 +33,21 @@ class RetrievedDocument:
     content: str
     source: str
     similarity_score: float
-
-
-# Development-only local knowledge base. It is explicitly not external evidence.
-SAMPLE_DOCUMENTS: tuple[Document, ...] = (
-    Document(
-        title="Retrieval-augmented generation overview",
-        content=(
-            "Retrieval-augmented generation retrieves relevant documents and "
-            "uses them as context when generating an answer."
-        ),
-        source="development-sample",
-    ),
-    Document(
-        title="Evidence-based answering",
-        content=(
-            "Evidence-based answering should cite retrieved passages and express "
-            "uncertainty when the available evidence is insufficient."
-        ),
-        source="development-sample",
-    ),
-    Document(
-        title="FAISS similarity search",
-        content=(
-            "FAISS IndexFlatIP performs exact inner-product search. With L2-normalized "
-            "embeddings, inner product is equivalent to cosine similarity."
-        ),
-        source="development-sample",
-    ),
-)
-
-# Backwards-compatible test alias. Documents are never indexed automatically.
-TEST_DOCUMENTS = SAMPLE_DOCUMENTS
+    url: str | None = None
 
 
 class DocumentRetriever:
-    """Index documents and retrieve them using the existing project embedder."""
+    """Index documents and retrieve only semantically relevant results."""
 
-    def __init__(self, embedder: SentenceTransformerEmbedder | None = None) -> None:
+    def __init__(
+        self,
+        embedder: SentenceTransformerEmbedder | None = None,
+        min_similarity: float = 0.35,
+    ) -> None:
+        if not 0.0 <= min_similarity <= 1.0:
+            raise ValueError("min_similarity must be between 0 and 1.")
         self.embedder = embedder or SentenceTransformerEmbedder()
+        self.min_similarity = min_similarity
         self.index = FaissVectorIndex(self.embedder.dimension)
         self._documents: list[Document] = []
 
@@ -92,8 +69,13 @@ class DocumentRetriever:
         self._documents.extend(validated_documents)
         logger.info("Indexed %d documents; index now contains %d vectors.", len(documents), self.index.count)
 
-    def retrieve(self, query: str, k: int = 5) -> list[RetrievedDocument]:
-        """Return up to ``k`` documents ranked by cosine similarity."""
+    def retrieve(
+        self,
+        query: str,
+        k: int = 5,
+        min_similarity: float | None = None,
+    ) -> list[RetrievedDocument]:
+        """Return relevant documents, excluding nearest-neighbor noise."""
         if not isinstance(k, Integral) or isinstance(k, bool) or k <= 0:
             raise ValueError("k must be a positive integer.")
 
@@ -104,14 +86,20 @@ class DocumentRetriever:
 
         query_embedding = self.embedder.encode(cleaned_query)
         hits = self.index.search(query_embedding, int(k))
+        threshold = self.min_similarity if min_similarity is None else min_similarity
+        if not 0.0 <= threshold <= 1.0:
+            raise ValueError("min_similarity must be between 0 and 1.")
+
         return [
             RetrievedDocument(
                 title=self._documents[hit.vector_id].title,
                 content=self._documents[hit.vector_id].content,
                 source=self._documents[hit.vector_id].source,
                 similarity_score=hit.similarity_score,
+                url=self._documents[hit.vector_id].url,
             )
             for hit in hits
+            if hit.similarity_score >= threshold
         ]
 
     @staticmethod
@@ -123,4 +111,5 @@ class DocumentRetriever:
             title=clean_text(document.title),
             content=clean_text(document.content),
             source=clean_text(document.source),
+            url=document.url.strip() if document.url else None,
         )

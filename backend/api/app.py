@@ -8,6 +8,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from api.routes.chat import router as chat_router
 from api.routes.health import router as health_router
 from api.routes.history import router as history_router
+from api.routes.verify import router as verify_router
 
 from api.config import settings
 from api.middleware.error_handler import register_error_handlers
@@ -31,6 +32,7 @@ register_error_handlers(app)
 app.include_router(chat_router, prefix="/api")
 app.include_router(health_router, prefix="/api")
 app.include_router(history_router, prefix="/api")
+app.include_router(verify_router, prefix="/api")
 
 
 @app.get("/")

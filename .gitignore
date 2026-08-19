@@ -228,3 +228,37 @@ node_modules/
 
 # Node package manager logs
 npm-debug.log*
+# Python
+venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+
+# Environment
+.env
+.env.*
+!.env.example
+
+# Python tooling
+.mypy_cache/
+.ruff_cache/
+
+# Frontend
+frontend/node_modules/
+frontend/dist/
+
+# Logs
+*.log
+
+# Local databases
+*.db
+*.sqlite
+*.sqlite3
+
+# Model checkpoints
+models/scifact/*.safetensors
+models/scifact/*.bin
+models/scifact/checkpoint-*/
+
+# Local/cache files
+.cache/

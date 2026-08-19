@@ -51,6 +51,8 @@ class Settings:
         os.getenv("TOP_K", 5)
     )
 
+    RETRIEVAL_MIN_SIMILARITY = float(os.getenv("RETRIEVAL_MIN_SIMILARITY", "0.35"))
+
     MODEL_NAME = os.getenv(
         "MODEL_NAME",
         "sentence-transformers/all-MiniLM-L6-v2"
@@ -58,9 +60,24 @@ class Settings:
 
     LLM_MODEL = os.getenv("LLM_MODEL", "")
 
+    PROJECT_ROOT = Path(__file__).resolve().parents[2]
+    SCIFACT_CORPUS_PATH = Path(os.getenv("SCIFACT_CORPUS_PATH", PROJECT_ROOT / "data" / "scifact" / "corpus.jsonl"))
+    SCIFACT_MODEL_PATH = Path(os.getenv("SCIFACT_MODEL_PATH", PROJECT_ROOT / "models" / "scifact"))
+    ANSWER_CORPUS_PATH = os.getenv("ANSWER_CORPUS_PATH", "")
+    KNOWLEDGE_PROVIDER = os.getenv("KNOWLEDGE_PROVIDER", "wikipedia").strip().lower()
+    KNOWLEDGE_API_URL = os.getenv("KNOWLEDGE_API_URL", "https://en.wikipedia.org/w/api.php")
+    KNOWLEDGE_TIMEOUT_SECONDS = float(os.getenv("KNOWLEDGE_TIMEOUT_SECONDS", "8"))
+    KNOWLEDGE_TOP_K = int(os.getenv("KNOWLEDGE_TOP_K", "8"))
+    KNOWLEDGE_MIN_SIMILARITY = float(os.getenv("KNOWLEDGE_MIN_SIMILARITY", "0.45"))
+    SCIFACT_MIN_SIMILARITY = float(os.getenv("SCIFACT_MIN_SIMILARITY", "0.65"))
+    SCIFACT_VERIFY_GENERAL = os.getenv("SCIFACT_VERIFY_GENERAL", "false").lower() == "true"
+
     CORS_ORIGINS = [
         origin.strip()
-        for origin in os.getenv("CORS_ORIGINS", "http://localhost:5173").split(",")
+        for origin in os.getenv(
+            "CORS_ORIGINS",
+            "http://localhost:8080,http://127.0.0.1:8080",
+        ).split(",")
         if origin.strip()
     ]
 

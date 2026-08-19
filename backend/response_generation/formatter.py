@@ -12,4 +12,5 @@ def source_payload(document: RetrievedDocument) -> dict[str, object]:
         "content": document.content,
         "source": document.source,
         "similarity_score": document.similarity_score,
+        "url": document.url,
     }

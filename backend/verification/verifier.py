@@ -24,12 +24,7 @@ class ConfidenceResult:
 
 
 class EvidenceScorer:
-    """Score evidence from similarity, coverage, and verification outcome.
-
-    Formula: 50% mean non-negative cosine similarity, 25% evidence coverage
-    (up to four documents), and 25% verification outcome (1/0.25/0 for
-    supported/uncertain/refuted).  This is an explainable project baseline.
-    """
+    """Score relevance, claim coverage, model confidence, and outcome."""
 
     def score(
         self,
@@ -39,8 +34,10 @@ class EvidenceScorer:
         if not evidence or not verifications:
             return ConfidenceResult(0.0, VerificationStatus.UNCERTAIN, "No verifiable evidence was retrieved.")
 
-        similarity = sum(max(item.similarity_score, 0.0) for item in evidence) / len(evidence)
-        coverage = min(len(evidence), 4) / 4
+        relevance = sum(max(item.similarity_score, 0.0) for item in evidence) / len(evidence)
+        covered_claims = sum(bool(result.evidence_titles) for result in verifications)
+        coverage = covered_claims / len(verifications)
+        model_confidence = sum(max(result.evidence_score, 0.0) for result in verifications) / len(verifications)
         statuses = [result.status for result in verifications]
         if VerificationStatus.REFUTED in statuses:
             outcome, status = 0.0, VerificationStatus.REFUTED
@@ -48,5 +45,14 @@ class EvidenceScorer:
             outcome, status = 1.0, VerificationStatus.SUPPORTED
         else:
             outcome, status = 0.25, VerificationStatus.UNCERTAIN
-        score = round(min(1.0, 0.5 * similarity + 0.25 * coverage + 0.25 * outcome), 4)
-        return ConfidenceResult(score, status, "Similarity 50% + evidence coverage 25% + verification outcome 25%.")
+        score = round(
+            min(1.0, 0.35 * relevance + 0.25 * coverage + 0.25 * outcome + 0.15 * model_confidence),
+            4,
+        )
+        if status == VerificationStatus.REFUTED:
+            score = min(score, 0.25)
+        explanation = (
+            "Retrieval relevance 35% + claim evidence coverage 25% + verification result 25% "
+            "+ SciFact model confidence 15%."
+        )
+        return ConfidenceResult(score, status, explanation)
