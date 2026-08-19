@@ -262,3 +262,9 @@ models/scifact/checkpoint-*/
 
 # Local/cache files
 .cache/
+# Local backups
+backend_local_backup/
+venv_broken/
+
+# Python virtual environments
+venv/
