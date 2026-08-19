@@ -1,5 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Eye, Filter, MessageCircleQuestion, Search, ShieldCheck } from "lucide-react";
 
 import { AppShell } from "@/components/app/app-shell";
@@ -13,7 +13,8 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
-import { verifications } from "@/data/mock";
+import { api, type Verification } from "@/lib/api";
+import { mapHistoryRecord } from "@/lib/presentation";
 
 export const Route = createFileRoute("/history")({
   head: () => ({
@@ -36,6 +37,17 @@ function HistoryPage() {
   const [query, setQuery] = useState("");
   const [filter, setFilter] = useState("all");
   const [page, setPage] = useState(1);
+  const [verifications, setVerifications] = useState<Verification[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+  const loadHistory = async () => {
+    try {
+      setError("");
+      const { history } = await api.history();
+      setVerifications(history.map(mapHistoryRecord));
+    } catch (cause) { setError(cause instanceof Error ? cause.message : "Unable to load history."); } finally { setLoading(false); }
+  };
+  useEffect(() => { void loadHistory(); }, []);
 
   const filtered = useMemo(
     () =>
@@ -44,7 +56,7 @@ function HistoryPage() {
           v.text.toLowerCase().includes(query.toLowerCase()) &&
           (filter === "all" || v.result === filter),
       ),
-    [query, filter],
+    [verifications, query, filter],
   );
 
   const pages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
@@ -93,10 +105,12 @@ function HistoryPage() {
               <SelectItem value="not-enough-info">Not Enough Info</SelectItem>
             </SelectContent>
           </Select>
-          <Button variant="outline" size="icon" aria-label="More filters" className="size-11 rounded-xl">
+          <Button variant="outline" size="icon" aria-label="Refresh history" className="size-11 rounded-xl" onClick={() => void loadHistory()}>
             <Filter className="size-4" />
           </Button>
         </div>
+        {loading && <p className="mt-3 text-sm text-muted-foreground">Loading...</p>}
+        {error && <p role="alert" className="mt-3 text-sm text-destructive">{error}</p>}
 
         <div className="mt-5 overflow-x-auto">
           <table className="w-full min-w-[720px] text-left text-sm">
@@ -114,6 +128,7 @@ function HistoryPage() {
                 <th scope="col" className="pb-3">
                   Confidence
                 </th>
+                <th scope="col" className="pb-3">Sources</th>
                 <th scope="col" className="pb-3">
                   Date
                 </th>
@@ -141,7 +156,8 @@ function HistoryPage() {
                   <td className="py-4 pr-4">
                     <ResultBadge result={v.result} />
                   </td>
-                  <td className="py-4 pr-4 tabular-nums">{v.confidence.toFixed(2)}</td>
+                  <td className="py-4 pr-4 tabular-nums">{v.confidenceAvailable ? `${(v.confidence * 100).toFixed(1)}%` : "Not available"}</td>
+                  <td className="py-4 pr-4 text-muted-foreground">{v.sourceCount}</td>
                   <td className="py-4 pr-4 text-muted-foreground">
                     <span className="block whitespace-nowrap">{v.date}</span>
                     <span className="block text-xs">{v.time}</span>
@@ -160,8 +176,8 @@ function HistoryPage() {
               ))}
               {rows.length === 0 && (
                 <tr>
-                  <td colSpan={6} className="py-10 text-center text-muted-foreground">
-                    No verifications match your filters.
+                  <td colSpan={7} className="py-10 text-center text-muted-foreground">
+                    No questions have been asked yet.
                   </td>
                 </tr>
               )}

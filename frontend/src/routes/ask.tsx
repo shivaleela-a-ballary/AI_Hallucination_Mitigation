@@ -4,10 +4,13 @@ import { motion } from "motion/react";
 import { Bot, Plus, Send, User } from "lucide-react";
 
 import { AppShell } from "@/components/app/app-shell";
-import { PageHeader } from "@/components/app/ui-kit";
+import { PageHeader, ResultBadge } from "@/components/app/ui-kit";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { initialChat, answerDetail, answerEvidence, type ChatMessage } from "@/data/mock";
+import { api, type AnswerRecord } from "@/lib/api";
+import { answerParagraphs, confidenceLabel, shortExcerpt, statusExplanation, resultFor } from "@/lib/presentation";
+
+type ChatMessage = { id: string; role: "user" | "assistant"; text: string; time: string; result?: AnswerRecord };
 
 export const Route = createFileRoute("/ask")({
   head: () => ({
@@ -29,34 +32,43 @@ function now() {
 }
 
 function AskPage() {
-  const [messages, setMessages] = useState<ChatMessage[]>(initialChat);
+  const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [draft, setDraft] = useState("");
   const [typing, setTyping] = useState(false);
+  const [error, setError] = useState("");
   const endRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     endRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages, typing]);
 
-  const send = () => {
+  const send = async () => {
     const value = draft.trim();
-    if (!value) return;
+    if (!value || typing) {
+      if (!value) setError("Enter a question first.");
+      return;
+    }
+    setError("");
     setMessages((m) => [...m, { id: crypto.randomUUID(), role: "user", text: value, time: now() }]);
     setDraft("");
     setTyping(true);
-    setTimeout(() => {
+    try {
+      const result = await api.ask(value);
       setTyping(false);
       setMessages((m) => [
         ...m,
         {
-          id: crypto.randomUUID(),
+          id: result.id,
           role: "assistant",
-          text: answerDetail.answer,
+          text: result.answer,
           time: now(),
-          sources: answerEvidence.map((e) => e.source),
+          result,
         },
       ]);
-    }, 1400);
+    } catch (cause) {
+      setTyping(false);
+      setError(cause instanceof Error ? cause.message : "Unable to process the question.");
+    }
   };
 
   return (
@@ -68,7 +80,7 @@ function AskPage() {
           <Button
             variant="outline"
             className="rounded-xl"
-            onClick={() => setMessages([])}
+            onClick={() => { setMessages([]); setError(""); }}
           >
             <Plus className="size-4" /> New Chat
           </Button>
@@ -109,18 +121,28 @@ function AskPage() {
                   </div>
                 ) : (
                   <div className="max-w-[85%] rounded-2xl rounded-tl-sm border border-border bg-card px-4 py-3">
-                    <p className="text-sm leading-relaxed">{m.text}</p>
-                    <p className="mt-1 text-[11px] text-muted-foreground">{m.time}</p>
-                    {m.sources && (
+                    {m.result ? <>
+                      <div className="flex flex-wrap items-center gap-2">
+                        <ResultBadge result={resultFor(m.result.verification_status)} />
+                        <span className="text-xs text-muted-foreground">{statusExplanation(m.result.verification_status)}</span>
+                      </div>
+                      <div className="mt-3 space-y-2 text-sm leading-relaxed">
+                        {answerParagraphs(m.result.answer).map((paragraph) => <p key={paragraph}>{paragraph}</p>)}
+                      </div>
+                      <p className="mt-3 text-xs font-semibold">Confidence: {confidenceLabel(m.result)}</p>
+                      <p className="mt-1 text-xs text-muted-foreground">{m.result.created_at ? new Date(m.result.created_at).toLocaleString() : m.time}</p>
+                    </> : <p className="text-sm leading-relaxed">{m.text}</p>}
+                    {m.result && (
                       <div className="mt-4 rounded-xl bg-muted/60 p-4">
-                        <p className="text-sm font-semibold">Sources ({m.sources.length})</p>
+                        <p className="text-sm font-semibold">Evidence &amp; Sources</p>
+                        {m.result.evidence.length > 0 && <p className="mt-2 text-xs text-muted-foreground">{shortExcerpt(m.result.evidence[0].content)}</p>}
                         <ol className="mt-2 list-decimal space-y-1 pl-5 text-sm text-muted-foreground">
-                          {m.sources.map((s) => (
-                            <li key={s}>{s}</li>
+                          {m.result.sources.map((s) => (
+                            <li key={`${s.source}:${s.title}`}>{s.url ? <a href={s.url} target="_blank" rel="noreferrer" className="hover:text-primary hover:underline">{s.title}</a> : s.title}</li>
                           ))}
                         </ol>
                         <Button asChild variant="secondary" size="sm" className="mt-3 rounded-lg">
-                          <Link to="/answer/$id" params={{ id: "v2" }}>
+                          <Link to="/answer/$id" params={{ id: m.id }}>
                             View Sources
                           </Link>
                         </Button>
@@ -147,6 +169,7 @@ function AskPage() {
                 </span>
               </li>
             )}
+            {error && <li role="alert" className="rounded-xl bg-danger-soft p-3 text-sm text-destructive">{error}</li>}
           </ul>
           <div ref={endRef} />
         </div>
@@ -168,7 +191,7 @@ function AskPage() {
             />
             <Button
               size="icon"
-              onClick={send}
+              onClick={() => void send()}
               aria-label="Send message"
               className="size-12 shrink-0 rounded-full"
             >

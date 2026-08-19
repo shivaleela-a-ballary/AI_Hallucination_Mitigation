@@ -1,5 +1,6 @@
 import { createFileRoute, Link, useParams } from "@tanstack/react-router";
 import { ArrowLeft, Copy, Info, Share2 } from "lucide-react";
+import { useEffect, useState } from "react";
 
 import { AppShell } from "@/components/app/app-shell";
 import { ConfidenceBar, ResultBadge, SectionCard } from "@/components/app/ui-kit";
@@ -11,7 +12,8 @@ import {
   AccordionTrigger,
 } from "@/components/ui/accordion";
 import { toast } from "sonner";
-import { answerDetail, answerEvidence, verifications } from "@/data/mock";
+import { api, toResult, type AnswerRecord } from "@/lib/api";
+import { answerParagraphs, claimStatus, confidenceLabel, statusExplanation } from "@/lib/presentation";
 
 export const Route = createFileRoute("/answer/$id")({
   head: () => ({
@@ -30,10 +32,14 @@ export const Route = createFileRoute("/answer/$id")({
 
 function AnswerDetails() {
   const { id } = useParams({ from: "/answer/$id" });
-  const record = verifications.find((v) => v.id === id);
-  const question = record?.text ?? answerDetail.question;
-  const result = record?.result ?? answerDetail.result;
-  const confidence = record?.confidence ?? answerDetail.confidence;
+  const [record, setRecord] = useState<AnswerRecord | null>(null);
+  const [error, setError] = useState("");
+  useEffect(() => { api.answer(id).then(setRecord).catch((cause) => setError(cause instanceof Error ? cause.message : "Answer not found")); }, [id]);
+  if (error) return <AppShell><p className="card-soft p-6 text-sm text-muted-foreground">Answer not found.</p></AppShell>;
+  if (!record) return <AppShell><p className="text-sm text-muted-foreground">Loading answer…</p></AppShell>;
+  const question = record.query;
+  const result = toResult(record.verification_status);
+  const confidence = record.confidence_score;
   const pct = Math.round(confidence * 100);
   const level = confidence >= 0.7 ? "High" : confidence >= 0.4 ? "Medium" : "Low";
 
@@ -81,56 +87,71 @@ function AnswerDetails() {
         </SectionCard>
 
         <SectionCard title="Answer">
-          <p className="text-sm leading-relaxed">{answerDetail.answer}</p>
+          <div className="space-y-3 text-sm leading-relaxed">
+            {answerParagraphs(record.answer).map((paragraph) => <p key={paragraph}>{paragraph}</p>)}
+          </div>
         </SectionCard>
 
         <div className="grid gap-6 md:grid-cols-2">
           <SectionCard title="Result">
             <ResultBadge result={result} className="px-3 py-1.5 text-sm" />
+            <p className="mt-3 text-sm text-muted-foreground">{statusExplanation(record.verification_status)}</p>
           </SectionCard>
 
           <SectionCard
             title="Confidence Score"
             action={<Info className="size-4 text-muted-foreground" aria-hidden="true" />}
           >
-            <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3">
-              <p className="text-3xl font-bold">{confidence.toFixed(2)}</p>
-              <span className="rounded-md bg-muted px-2 py-1 text-xs font-semibold text-muted-foreground">
-                {level}
-              </span>
-            </div>
-            <div className="mt-3">
-              <ConfidenceBar value={confidence} />
-            </div>
-            <p className="mt-2 text-xs text-muted-foreground">{pct}% evidence agreement</p>
+            {record.confidence_available && confidence > 0 ? <>
+              <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3">
+                <p className="text-3xl font-bold">{confidence.toFixed(2)}</p>
+                <span className="rounded-md bg-muted px-2 py-1 text-xs font-semibold text-muted-foreground">{level}</span>
+              </div>
+              <div className="mt-3"><ConfidenceBar value={confidence} /></div>
+              <p className="mt-2 text-xs text-muted-foreground">{pct}% evidence agreement</p>
+            </> : <p className="text-sm text-muted-foreground">Confidence unavailable because the available evidence was insufficient for verification.</p>}
           </SectionCard>
         </div>
 
+        <SectionCard title={`Verified Claims (${record.claims.length})`}>
+          {record.claims.length ? <div className="flex flex-col gap-3">
+            {record.claims.map((claim) => <div key={claim.claim} className="rounded-xl border border-border p-4">
+              <div className="flex flex-wrap items-center justify-between gap-2"><p className="text-sm font-medium">{claim.claim}</p><ResultBadge result={claimStatus(claim)} /></div>
+              <p className="mt-2 text-xs text-muted-foreground">{claim.method} · Evidence confidence {(claim.evidence_score * 100).toFixed(1)}%</p>
+            </div>)}
+          </div> : <p className="text-sm text-muted-foreground">No claims were verified for this answer.</p>}
+        </SectionCard>
+
         <SectionCard title="Supporting Evidence" bodyClassName="p-5 pt-2">
           <Accordion type="single" collapsible className="flex flex-col gap-2">
-            {answerEvidence.map((e, i) => (
+            {record.evidence.map((e, i) => (
               <AccordionItem
-                key={e.source}
-                value={e.source}
+                key={`${e.source}-${e.title}`}
+                value={`${e.source}-${e.title}`}
                 className="rounded-xl border border-border px-4"
               >
                 <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3">
                   <AccordionTrigger className="min-w-0 text-sm font-medium hover:no-underline">
                     <span className="truncate">
-                      {i + 1}. {e.source}
+                      {i + 1}. {e.title}
                     </span>
                   </AccordionTrigger>
-                  <Button asChild variant="secondary" size="sm" className="rounded-lg">
-                    <a href={e.url} target="_blank" rel="noreferrer noopener">
-                      View
-                    </a>
-                  </Button>
+                  {e.url ? <a href={e.url} target="_blank" rel="noreferrer" className="text-xs text-primary hover:underline">{e.source}</a> : <span className="text-xs text-muted-foreground">{e.source}</span>}
                 </div>
-                <AccordionContent className="text-sm text-muted-foreground">{e.snippet}</AccordionContent>
+                <AccordionContent className="text-sm text-muted-foreground">{e.content}</AccordionContent>
               </AccordionItem>
             ))}
           </Accordion>
+          {!record.evidence.length && <p className="p-4 text-sm text-muted-foreground">No verified evidence was returned.</p>}
         </SectionCard>
+
+        <SectionCard title={`Retrieved Sources (${record.sources.length})`}>
+          {record.sources.length ? <div className="grid gap-3 md:grid-cols-2">{record.sources.map((source) => <article key={`${source.source}:${source.title}`} className="rounded-xl border border-border p-4"><div className="flex items-start justify-between gap-3"><h3 className="text-sm font-semibold">{source.title}</h3><span className="text-xs text-muted-foreground">{source.similarity_score.toFixed(2)}</span></div><p className="mt-2 text-xs text-muted-foreground">{source.source}</p>{source.url && <a href={source.url} target="_blank" rel="noreferrer" className="mt-2 inline-block text-xs text-primary hover:underline">Open source</a>}</article>)}</div> : <p className="text-sm text-muted-foreground">No verified sources were returned for this answer.</p>}
+        </SectionCard>
+        <div className="flex flex-wrap gap-3">
+          <a href={`/sources?answer_id=${encodeURIComponent(record.id)}`} className="rounded-xl border border-border px-4 py-2 text-sm font-medium hover:border-primary hover:text-primary">View sources for this answer</a>
+          <a href={`/knowledge-graph?answer_id=${encodeURIComponent(record.id)}`} className="rounded-xl border border-border px-4 py-2 text-sm font-medium hover:border-primary hover:text-primary">View graph for this answer</a>
+        </div>
       </div>
     </AppShell>
   );

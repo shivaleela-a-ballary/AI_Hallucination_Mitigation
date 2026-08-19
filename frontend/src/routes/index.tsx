@@ -12,13 +12,14 @@ import {
   Sparkles,
   Upload,
 } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 import { AppShell } from "@/components/app/app-shell";
 import { SectionCard, ResultBadge } from "@/components/app/ui-kit";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { currentUser, verifications } from "@/data/mock";
+import { api, type Verification } from "@/lib/api";
+import { mapHistoryRecord } from "@/lib/presentation";
 import robot from "@/assets/robot.png";
 
 export const Route = createFileRoute("/")({
@@ -40,13 +41,6 @@ export const Route = createFileRoute("/")({
   component: Dashboard,
 });
 
-const statCards = [
-  { value: 32, label: "Total Verifications", icon: MessagesSquare, tone: "bg-accent text-primary" },
-  { value: 18, label: "Supported", icon: CheckCircle2, tone: "bg-success-soft text-success" },
-  { value: 8, label: "Refuted", icon: BadgeAlert, tone: "bg-danger-soft text-destructive" },
-  { value: 6, label: "Not Enough Info", icon: ShieldQuestion, tone: "bg-warning-soft text-warning" },
-];
-
 const overviewSteps = [
   { label: "Retrieve Information", icon: FileSearch },
   { label: "Build Knowledge Graph", icon: Share2 },
@@ -56,13 +50,26 @@ const overviewSteps = [
 
 function Dashboard() {
   const [claim, setClaim] = useState("");
+  const [verifications, setVerifications] = useState<Verification[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [historyError, setHistoryError] = useState("");
+  useEffect(() => {
+    api.history().then(({ history }) => setVerifications(history.map(mapHistoryRecord))).catch(() => { setVerifications([]); setHistoryError("Unable to load project history."); }).finally(() => setLoading(false));
+  }, []);
+  const counts = verifications.reduce((summary, item) => { summary[item.result] += 1; return summary; }, { supported: 0, refuted: 0, "not-enough-info": 0 } as Record<string, number>);
+  const statCards = [
+    { value: verifications.length, label: "Total Verifications", icon: MessagesSquare, tone: "bg-accent text-primary" },
+    { value: counts.supported, label: "Supported", icon: CheckCircle2, tone: "bg-success-soft text-success" },
+    { value: counts.refuted, label: "Refuted", icon: BadgeAlert, tone: "bg-danger-soft text-destructive" },
+    { value: counts["not-enough-info"], label: "Not Enough Info", icon: ShieldQuestion, tone: "bg-warning-soft text-warning" },
+  ];
 
   return (
     <AppShell>
       <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-4">
         <div className="min-w-0">
           <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">
-            Welcome back, {currentUser.name}! 👋
+            Evidence workspace
           </h1>
           <p className="mt-1 text-sm text-muted-foreground">
             Verify claims, ask questions and get evidence-based answers.
@@ -146,7 +153,10 @@ function Dashboard() {
             }
             bodyClassName="p-0"
           >
-            <div className="overflow-x-auto px-5 pt-4 pb-5">
+            {loading && <p className="px-5 py-6 text-sm text-muted-foreground">Loading...</p>}
+            {historyError && <p role="alert" className="px-5 py-6 text-sm text-destructive">{historyError}</p>}
+            {!loading && !historyError && !verifications.length && <p className="px-5 py-6 text-sm text-muted-foreground">No data yet.</p>}
+            {!loading && !historyError && verifications.length > 0 && <div className="overflow-x-auto px-5 pt-4 pb-5">
               <table className="w-full min-w-[420px] text-left text-sm">
                 <thead>
                   <tr className="text-xs font-semibold text-muted-foreground">
@@ -179,7 +189,7 @@ function Dashboard() {
                   ))}
                 </tbody>
               </table>
-            </div>
+            </div>}
           </SectionCard>
 
           <SectionCard title="System Overview">

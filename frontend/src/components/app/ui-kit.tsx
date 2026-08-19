@@ -2,7 +2,7 @@ import type { ReactNode } from "react";
 import { motion } from "motion/react";
 
 import { cn } from "@/lib/utils";
-import type { VerificationResult } from "@/data/mock";
+import type { VerificationResult } from "@/lib/api";
 
 export function SectionCard({
   title,

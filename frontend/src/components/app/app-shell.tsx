@@ -21,7 +21,6 @@ import {
   CommandList,
 } from "@/components/ui/command";
 import { SidebarNav, navItems } from "@/components/app/sidebar-nav";
-import { currentUser } from "@/data/mock";
 import { cn } from "@/lib/utils";
 
 export function AppShell({ children }: { children: ReactNode }) {
@@ -102,15 +101,15 @@ export function AppShell({ children }: { children: ReactNode }) {
               <DropdownMenu>
                 <DropdownMenuTrigger className="flex items-center gap-2 rounded-full py-1 pr-2 pl-1 transition-colors hover:bg-muted focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none">
                   <span className="grid size-8 place-items-center rounded-full bg-primary text-sm font-semibold text-primary-foreground">
-                    {currentUser.initial}
+                    A
                   </span>
-                  <span className="hidden text-sm font-medium sm:block">{currentUser.name}</span>
+                  <span className="hidden text-sm font-medium sm:block">Account</span>
                   <ChevronDown className="size-4 text-muted-foreground" aria-hidden="true" />
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="w-52">
                   <DropdownMenuLabel>
-                    <p className="text-sm font-semibold">{currentUser.name}</p>
-                    <p className="text-xs font-normal text-muted-foreground">{currentUser.email}</p>
+                    <p className="text-sm font-semibold">Account</p>
+                    <p className="text-xs font-normal text-muted-foreground">API-backed workspace</p>
                   </DropdownMenuLabel>
                   <DropdownMenuSeparator />
                   <DropdownMenuItem onSelect={() => navigate({ to: "/settings" })}>

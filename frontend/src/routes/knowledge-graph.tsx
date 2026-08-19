@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   Background,
   Controls,
@@ -14,7 +14,7 @@ import { Search, X } from "lucide-react";
 import { AppShell } from "@/components/app/app-shell";
 import { PageHeader } from "@/components/app/ui-kit";
 import { Input } from "@/components/ui/input";
-import { graphEntities } from "@/data/mock";
+import { api } from "@/lib/api";
 
 export const Route = createFileRoute("/knowledge-graph")({
   head: () => ({
@@ -41,56 +41,33 @@ const nodeStyle = {
   fontSize: 12,
 };
 
-const baseNodes: Node[] = [
-  { id: "power_plants", position: { x: 0, y: 0 }, data: { label: "Power Plants" }, style: nodeStyle },
-  { id: "vehicles", position: { x: 0, y: 180 }, data: { label: "Vehicles" }, style: nodeStyle },
-  { id: "so2", position: { x: 220, y: 0 }, data: { label: "Sulfur Dioxide" }, style: nodeStyle },
-  { id: "nox", position: { x: 220, y: 180 }, data: { label: "Nitrogen Oxides" }, style: nodeStyle },
-  { id: "sulfuric", position: { x: 440, y: 0 }, data: { label: "Sulfuric Acid" }, style: nodeStyle },
-  { id: "nitric", position: { x: 440, y: 180 }, data: { label: "Nitric Acid" }, style: nodeStyle },
-  {
-    id: "acid_rain",
-    position: { x: 670, y: 90 },
-    data: { label: "Acid Rain" },
-    style: {
-      ...nodeStyle,
-      background: "var(--primary)",
-      color: "var(--primary-foreground)",
-      fontSize: 14,
-    },
-  },
-  { id: "forests", position: { x: 900, y: 20 }, data: { label: "Forests & Lakes" }, style: nodeStyle },
-  { id: "epa", position: { x: 900, y: 170 }, data: { label: "EPA" }, style: nodeStyle },
-];
-
-const edgeBase = { type: "default", animated: true, style: { stroke: "var(--secondary)" } };
-
-const baseEdges: Edge[] = [
-  { id: "e1", source: "power_plants", target: "so2", label: "emits", ...edgeBase },
-  { id: "e2", source: "vehicles", target: "nox", label: "emits", ...edgeBase },
-  { id: "e3", source: "so2", target: "sulfuric", label: "forms", ...edgeBase },
-  { id: "e4", source: "nox", target: "nitric", label: "forms", ...edgeBase },
-  { id: "e5", source: "sulfuric", target: "acid_rain", label: "component of", ...edgeBase },
-  { id: "e6", source: "nitric", target: "acid_rain", label: "component of", ...edgeBase },
-  { id: "e7", source: "acid_rain", target: "forests", label: "damages", ...edgeBase },
-  { id: "e8", source: "epa", target: "acid_rain", label: "documents", ...edgeBase },
-];
-
 function KnowledgeGraphPage() {
   const [query, setQuery] = useState("");
-  const [selected, setSelected] = useState<string | null>("acid_rain");
+  const [selected, setSelected] = useState<string | null>(null);
+  const [graph, setGraph] = useState<{ nodes: Node[]; edges: Edge[] }>({ nodes: [], edges: [] });
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+  const [selectedEdge, setSelectedEdge] = useState<Edge | null>(null);
+  useEffect(() => {
+    const answerId = new URLSearchParams(window.location.search).get("answer_id") ?? undefined;
+    const stored = !answerId ? sessionStorage.getItem("latest-verification-graph") : null;
+    const graphRequest = stored ? Promise.resolve(JSON.parse(stored)) : api.graph(answerId);
+    graphRequest.then((value) => setGraph({
+      nodes: value.nodes.map((node: { id: string; label?: string; kind?: string }, index: number) => ({ id: node.id, position: { x: (index % 4) * 220, y: Math.floor(index / 4) * 160 }, data: { label: node.label ?? node.id, kind: node.kind }, style: nodeStyle })),
+      edges: value.edges.map((edge: { source: string; target: string; predicate?: string; relationship?: string }, index: number) => ({ ...edge, id: `edge-${index}`, type: "default", label: edge.predicate ?? edge.relationship })),
+    })).catch(() => setError("Unable to load the knowledge graph for this answer.")).finally(() => setLoading(false));
+  }, []);
 
   const nodes = useMemo(
     () =>
-      baseNodes.map((n) => {
+      graph.nodes.map((n) => {
         const label = String(n.data.label ?? "");
         const dim = query.length > 0 && !label.toLowerCase().includes(query.toLowerCase());
         return { ...n, style: { ...(n.style as object), opacity: dim ? 0.25 : 1 } };
       }),
-    [query],
+    [graph.nodes, query],
   );
-
-  const entity = selected ? graphEntities[selected] : null;
+  const entity = selected ? graph.nodes.find((node) => node.id === selected) : null;
 
   return (
     <AppShell>
@@ -114,27 +91,34 @@ function KnowledgeGraphPage() {
             </div>
           </div>
           <div className="h-[calc(100%-73px)]">
-            <ReactFlow
+            {loading && <p className="p-5 text-sm text-muted-foreground">Loading...</p>}
+            {!loading && error && <p role="alert" className="p-5 text-sm text-destructive">{error}</p>}
+            {!loading && !error && !graph.nodes.length && <p className="p-5 text-sm text-muted-foreground">Knowledge graph unavailable for this query because insufficient verified relationships were found.</p>}
+            {!loading && !error && graph.nodes.length > 0 && <ReactFlow
               nodes={nodes}
-              edges={baseEdges}
+              edges={graph.edges}
               fitView
               onNodeClick={(_, node) => setSelected(node.id)}
+              onEdgeClick={(_, edge) => setSelectedEdge(edge)}
               proOptions={{ hideAttribution: true }}
             >
               <Background gap={20} />
               <Controls />
               <MiniMap pannable zoomable />
-            </ReactFlow>
+            </ReactFlow>}
           </div>
         </div>
 
         <aside className="card-soft h-fit p-5">
-          {entity ? (
+          {selectedEdge ? <>
+            <div className="flex items-center justify-between"><h2 className="text-lg font-bold">Relationship</h2><button type="button" aria-label="Close relationship details" onClick={() => setSelectedEdge(null)}><X className="size-4" /></button></div>
+            <p className="mt-3 text-sm text-muted-foreground">{String(selectedEdge.label ?? "Evidence relationship")}</p>
+          </> : entity ? (
             <>
               <div className="grid grid-cols-[minmax(0,1fr)_auto] items-start gap-2">
                 <div className="min-w-0">
-                  <h2 className="truncate text-lg font-bold">{entity.label}</h2>
-                  <p className="text-xs font-medium text-primary">{entity.kind}</p>
+                  <h2 className="truncate text-lg font-bold">{String(entity.data.label ?? entity.id)}</h2>
+                  <p className="text-xs text-primary">{String(entity.data.kind ?? "evidence node")}</p>
                 </div>
                 <button
                   type="button"
@@ -145,19 +129,11 @@ function KnowledgeGraphPage() {
                   <X className="size-4" />
                 </button>
               </div>
-              <p className="mt-3 text-sm text-muted-foreground">{entity.description}</p>
-              <h3 className="mt-5 text-sm font-semibold">Relations</h3>
-              <ul className="mt-2 flex flex-col gap-2">
-                {entity.relations.map((r) => (
-                  <li key={r} className="rounded-lg bg-muted px-3 py-2 text-xs font-medium">
-                    {r}
-                  </li>
-                ))}
-              </ul>
+              <p className="mt-3 text-sm text-muted-foreground">This node came from the latest API response.</p>
             </>
           ) : (
             <p className="text-sm text-muted-foreground">
-              Select a node in the graph to inspect its entity details and relations.
+              {graph.nodes.length ? "Select a node in the graph to inspect it." : "No real answer graph is available yet."}
             </p>
           )}
         </aside>
