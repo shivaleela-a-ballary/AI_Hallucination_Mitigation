@@ -22,6 +22,7 @@ import {
 } from "@/components/ui/command";
 import { SidebarNav, navItems } from "@/components/app/sidebar-nav";
 import { cn } from "@/lib/utils";
+import { useAuth } from "@/lib/auth-context";
 
 export function AppShell({ children }: { children: ReactNode }) {
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -29,6 +30,7 @@ export function AppShell({ children }: { children: ReactNode }) {
   const [commandOpen, setCommandOpen] = useState(false);
   const navigate = useNavigate();
   const pathname = useRouterState({ select: (s) => s.location.pathname });
+  const { user, isAuthenticated, logout, openAuthModal } = useAuth();
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -98,30 +100,53 @@ export function AppShell({ children }: { children: ReactNode }) {
                 <span className="absolute top-2 right-2 size-2 rounded-full bg-destructive" />
               </button>
 
-              <DropdownMenu>
-                <DropdownMenuTrigger className="flex items-center gap-2 rounded-full py-1 pr-2 pl-1 transition-colors hover:bg-muted focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none">
-                  <span className="grid size-8 place-items-center rounded-full bg-primary text-sm font-semibold text-primary-foreground">
-                    A
-                  </span>
-                  <span className="hidden text-sm font-medium sm:block">Account</span>
-                  <ChevronDown className="size-4 text-muted-foreground" aria-hidden="true" />
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-52">
-                  <DropdownMenuLabel>
-                    <p className="text-sm font-semibold">Account</p>
-                    <p className="text-xs font-normal text-muted-foreground">API-backed workspace</p>
-                  </DropdownMenuLabel>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem onSelect={() => navigate({ to: "/settings" })}>
-                    Settings
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onSelect={() => navigate({ to: "/history" })}>
-                    My history
-                  </DropdownMenuItem>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem>Logout</DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
+              {isAuthenticated && user ? (
+                <DropdownMenu>
+                  <DropdownMenuTrigger className="flex items-center gap-2 rounded-full py-1 pr-2 pl-1 transition-colors hover:bg-muted focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none">
+                    <span className="grid size-8 place-items-center rounded-full bg-primary text-sm font-semibold text-primary-foreground shadow-sm">
+                      {(user.full_name || user.username || "U").charAt(0).toUpperCase()}
+                    </span>
+                    <span className="hidden text-sm font-medium sm:block max-w-[120px] truncate">
+                      {user.full_name || user.username}
+                    </span>
+                    <ChevronDown className="size-4 text-muted-foreground" aria-hidden="true" />
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end" className="w-56 p-2 rounded-xl">
+                    <DropdownMenuLabel className="p-2">
+                      <p className="text-sm font-semibold truncate">{user.full_name || user.username}</p>
+                      <p className="text-xs font-normal text-muted-foreground truncate">{user.email}</p>
+                    </DropdownMenuLabel>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem onSelect={() => navigate({ to: "/settings" })} className="rounded-lg cursor-pointer">
+                      Profile &amp; Settings
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onSelect={() => navigate({ to: "/history" })} className="rounded-lg cursor-pointer">
+                      Verification History
+                    </DropdownMenuItem>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem onSelect={() => void logout()} className="rounded-lg text-destructive focus:text-destructive cursor-pointer">
+                      Sign Out
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              ) : (
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => openAuthModal("login")}
+                    className="inline-flex h-9 items-center justify-center rounded-xl bg-primary px-3.5 text-xs font-semibold text-primary-foreground shadow-soft transition-colors hover:bg-primary/90 focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
+                  >
+                    Sign In
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => openAuthModal("register")}
+                    className="hidden sm:inline-flex h-9 items-center justify-center rounded-xl border border-border px-3 text-xs font-medium text-foreground transition-colors hover:bg-muted focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
+                  >
+                    Register
+                  </button>
+                </div>
+              )}
             </div>
           </div>
         </header>

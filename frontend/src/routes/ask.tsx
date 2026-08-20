@@ -13,6 +13,9 @@ import { answerParagraphs, confidenceLabel, shortExcerpt, statusExplanation, res
 type ChatMessage = { id: string; role: "user" | "assistant"; text: string; time: string; result?: AnswerRecord };
 
 export const Route = createFileRoute("/ask")({
+  validateSearch: (search: Record<string, unknown>) => ({
+    q: (search.q as string) || "",
+  }),
   head: () => ({
     meta: [
       { title: "Ask a Question — AI Hallucination Mitigation System" },
@@ -32,18 +35,20 @@ function now() {
 }
 
 function AskPage() {
+  const search = Route.useSearch();
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [draft, setDraft] = useState("");
   const [typing, setTyping] = useState(false);
   const [error, setError] = useState("");
   const endRef = useRef<HTMLDivElement>(null);
+  const autoExecutedRef = useRef(false);
 
   useEffect(() => {
     endRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages, typing]);
 
-  const send = async () => {
-    const value = draft.trim();
+  const send = async (customValue?: string) => {
+    const value = (customValue !== undefined ? customValue : draft).trim();
     if (!value || typing) {
       if (!value) setError("Enter a question first.");
       return;
@@ -70,6 +75,13 @@ function AskPage() {
       setError(cause instanceof Error ? cause.message : "Unable to process the question.");
     }
   };
+
+  useEffect(() => {
+    if (search.q && !autoExecutedRef.current) {
+      autoExecutedRef.current = true;
+      void send(search.q);
+    }
+  }, [search.q]);
 
   return (
     <AppShell>

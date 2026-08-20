@@ -3,8 +3,10 @@
 from __future__ import annotations
 
 import logging
+import pickle
 from dataclasses import dataclass
 from numbers import Integral
+from pathlib import Path
 from typing import Sequence
 
 from preprocessing.embeddings import SentenceTransformerEmbedder
@@ -68,6 +70,32 @@ class DocumentRetriever:
         self.index.add(embeddings)
         self._documents.extend(validated_documents)
         logger.info("Indexed %d documents; index now contains %d vectors.", len(documents), self.index.count)
+
+    def save(self, directory: str | Path) -> None:
+        """Persist index and document metadata to disk."""
+        target_dir = Path(directory)
+        target_dir.mkdir(parents=True, exist_ok=True)
+        self.index.save(target_dir / "index.faiss")
+        with (target_dir / "documents.pkl").open("wb") as f:
+            pickle.dump(self._documents, f)
+        logger.info("Saved retriever index and %d documents to %s.", len(self._documents), target_dir)
+
+    def load(self, directory: str | Path) -> bool:
+        """Load precomputed index and document metadata from disk."""
+        target_dir = Path(directory)
+        index_file = target_dir / "index.faiss"
+        docs_file = target_dir / "documents.pkl"
+        if not (index_file.exists() and docs_file.exists()):
+            return False
+        try:
+            self.index = FaissVectorIndex.load(index_file)
+            with docs_file.open("rb") as f:
+                self._documents = pickle.load(f)
+            logger.info("Loaded precomputed index and %d documents from %s.", len(self._documents), target_dir)
+            return True
+        except Exception as exc:
+            logger.warning("Failed to load cached index from %s: %s", target_dir, exc)
+            return False
 
     def retrieve(
         self,

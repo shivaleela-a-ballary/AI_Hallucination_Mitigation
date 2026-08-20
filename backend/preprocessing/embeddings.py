@@ -27,7 +27,10 @@ class SentenceTransformerEmbedder:
                 f"Unable to load sentence-transformer model '{self.model_name}'."
             ) from exc
 
-        self.dimension = self.model.get_sentence_embedding_dimension()
+        if hasattr(self.model, "get_embedding_dimension"):
+            self.dimension = self.model.get_embedding_dimension()
+        else:
+            self.dimension = self.model.get_sentence_embedding_dimension()
         if not self.dimension:
             raise RuntimeError(
                 f"Embedding model '{self.model_name}' did not report an embedding dimension."
@@ -59,7 +62,7 @@ class SentenceTransformerEmbedder:
             )
         return vector
 
-    def encode_many(self, texts: Sequence[str]) -> np.ndarray:
+    def encode_many(self, texts: Sequence[str], batch_size: int = 128) -> np.ndarray:
         """Return one normalised float32 embedding per supplied text."""
         if not texts:
             raise ValueError("At least one text is required to generate embeddings.")
@@ -68,6 +71,8 @@ class SentenceTransformerEmbedder:
         try:
             embeddings = self.model.encode(
                 cleaned_texts,
+                batch_size=batch_size,
+                show_progress_bar=False,
                 convert_to_numpy=True,
                 normalize_embeddings=True,
             )

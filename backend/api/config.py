@@ -25,7 +25,7 @@ class Settings:
 
     HOST = os.getenv(
         "HOST",
-        "127.0.0.1"
+        "0.0.0.0"
     )
 
     PORT = int(
@@ -69,14 +69,33 @@ class Settings:
     KNOWLEDGE_TIMEOUT_SECONDS = float(os.getenv("KNOWLEDGE_TIMEOUT_SECONDS", "8"))
     KNOWLEDGE_TOP_K = int(os.getenv("KNOWLEDGE_TOP_K", "8"))
     KNOWLEDGE_MIN_SIMILARITY = float(os.getenv("KNOWLEDGE_MIN_SIMILARITY", "0.45"))
-    SCIFACT_MIN_SIMILARITY = float(os.getenv("SCIFACT_MIN_SIMILARITY", "0.65"))
+    SCIFACT_MIN_SIMILARITY = float(os.getenv("SCIFACT_MIN_SIMILARITY", "0.50"))
     SCIFACT_VERIFY_GENERAL = os.getenv("SCIFACT_VERIFY_GENERAL", "false").lower() == "true"
+
+    # MongoDB Atlas Configuration
+    MONGODB_URI = os.getenv(
+        "MONGODB_URI",
+        os.getenv("MONGO_URI", "")
+    ).strip()
+    MONGODB_DB_NAME = os.getenv(
+        "MONGODB_DB_NAME",
+        os.getenv("MONGO_DB", "ai_hallucination_mitigation")
+    ).strip()
+    MONGODB_TIMEOUT_MS = int(os.getenv("MONGODB_TIMEOUT_MS", "4000"))
+
+    # JWT Authentication Configuration
+    JWT_SECRET_KEY = os.getenv(
+        "JWT_SECRET_KEY",
+        "super-secret-key-change-in-production-ai-hallucination-mitigation-2026"
+    )
+    JWT_ALGORITHM = os.getenv("JWT_ALGORITHM", "HS256")
+    JWT_ACCESS_TOKEN_EXPIRE_MINUTES = int(os.getenv("JWT_ACCESS_TOKEN_EXPIRE_MINUTES", "1440"))  # 24 hours
 
     CORS_ORIGINS = [
         origin.strip()
         for origin in os.getenv(
             "CORS_ORIGINS",
-            "http://localhost:8080,http://127.0.0.1:8080",
+            "http://192.168.137.130:8080,http://localhost:8080,http://127.0.0.1:8080,http://localhost:5173,http://127.0.0.1:5173,http://localhost:3000,http://127.0.0.1:3000,http://localhost:8000,http://127.0.0.1:8000",
         ).split(",")
         if origin.strip()
     ]

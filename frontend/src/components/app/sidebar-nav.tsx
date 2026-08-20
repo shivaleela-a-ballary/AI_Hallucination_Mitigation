@@ -10,6 +10,7 @@ import {
   Settings,
   Info,
   LogOut,
+  LogIn,
   Moon,
 } from "lucide-react";
 import { motion } from "motion/react";
@@ -17,6 +18,7 @@ import { motion } from "motion/react";
 import { Switch } from "@/components/ui/switch";
 import { cn } from "@/lib/utils";
 import { useTheme } from "@/hooks/use-theme";
+import { useAuth } from "@/lib/auth-context";
 import robot from "@/assets/robot.png";
 
 export const navItems = [
@@ -48,6 +50,7 @@ export function BrandMark() {
 export function SidebarNav({ onNavigate }: { onNavigate?: () => void }) {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const { theme, setTheme } = useTheme();
+  const { isAuthenticated, logout, openAuthModal } = useAuth();
 
   return (
     <div className="flex h-full flex-col gap-6 overflow-y-auto p-6">
@@ -110,13 +113,25 @@ export function SidebarNav({ onNavigate }: { onNavigate?: () => void }) {
           />
         </label>
 
-        <button
-          type="button"
-          className="flex items-center gap-3 rounded-xl px-3 py-2 text-sm font-medium text-muted-foreground transition-colors hover:bg-sidebar-accent/60 hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
-        >
-          <LogOut className="size-4.5" aria-hidden="true" />
-          Logout
-        </button>
+        {isAuthenticated ? (
+          <button
+            type="button"
+            onClick={() => void logout()}
+            className="flex items-center gap-3 rounded-xl px-3 py-2 text-sm font-medium text-muted-foreground transition-colors hover:bg-sidebar-accent/60 hover:text-destructive focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
+          >
+            <LogOut className="size-4.5" aria-hidden="true" />
+            Sign Out
+          </button>
+        ) : (
+          <button
+            type="button"
+            onClick={() => openAuthModal("login")}
+            className="flex items-center gap-3 rounded-xl px-3 py-2 text-sm font-medium text-primary transition-colors hover:bg-sidebar-accent/60 hover:text-primary/90 focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
+          >
+            <LogIn className="size-4.5" aria-hidden="true" />
+            Sign In
+          </button>
+        )}
       </div>
     </div>
   );

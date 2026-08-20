@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from numbers import Integral
+from pathlib import Path
 
 import faiss
 import numpy as np
@@ -35,6 +36,18 @@ class FaissVectorIndex:
     def count(self) -> int:
         """Return the number of vectors stored in the index."""
         return int(self.index.ntotal)
+
+    def save(self, file_path: str | Path) -> None:
+        """Save the FAISS index to disk."""
+        faiss.write_index(self.index, str(file_path))
+
+    @classmethod
+    def load(cls, file_path: str | Path) -> FaissVectorIndex:
+        """Load a FAISS index from disk."""
+        idx = faiss.read_index(str(file_path))
+        instance = cls(idx.d)
+        instance.index = idx
+        return instance
 
     def add(self, embeddings: np.ndarray) -> None:
         """Validate, normalise, and add a batch of embeddings to the index."""

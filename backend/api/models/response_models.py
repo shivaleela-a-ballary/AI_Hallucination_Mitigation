@@ -34,6 +34,8 @@ class ChatResponse(BaseModel):
 
 
 class VerificationResponse(BaseModel):
+    id: str | None = None
+    created_at: str | None = None
     claim: str
     verification_status: str
     confidence_score: float

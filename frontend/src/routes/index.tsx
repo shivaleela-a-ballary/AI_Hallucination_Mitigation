@@ -1,4 +1,4 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { motion } from "motion/react";
 import {
   ArrowRight,
@@ -49,10 +49,37 @@ const overviewSteps = [
 ];
 
 function Dashboard() {
+  const navigate = useNavigate();
   const [claim, setClaim] = useState("");
   const [verifications, setVerifications] = useState<Verification[]>([]);
   const [loading, setLoading] = useState(true);
   const [historyError, setHistoryError] = useState("");
+
+  const handleStartQuery = (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
+    const text = claim.trim();
+    if (!text) {
+      navigate({ to: "/new-verification" });
+      return;
+    }
+
+    const isQuestion =
+      text.endsWith("?") ||
+      /^(what|how|why|who|when|where|is|are|can|does|do|explain|tell me)\b/i.test(text);
+
+    if (isQuestion) {
+      navigate({
+        to: "/ask",
+        search: { q: text },
+      });
+    } else {
+      navigate({
+        to: "/new-verification",
+        search: { claim: text },
+      });
+    }
+  };
+
   useEffect(() => {
     api.history().then(({ history }) => setVerifications(history.map(mapHistoryRecord))).catch(() => { setVerifications([]); setHistoryError("Unable to load project history."); }).finally(() => setLoading(false));
   }, []);
@@ -89,34 +116,34 @@ function Dashboard() {
           title="Start New Verification"
           description="Type a claim/question or upload files to get accurate evidence-based answers."
         >
-          <Input
-            value={claim}
-            onChange={(e) => setClaim(e.target.value)}
-            placeholder="Enter your claim or question here..."
-            aria-label="Claim or question"
-            className="h-14 rounded-xl bg-background px-4 text-base"
-          />
-          <div className="mt-4 grid grid-cols-[minmax(0,1fr)_auto] items-center gap-4">
-            <Link
-              to="/new-verification"
-              className="flex min-w-0 items-center gap-3 rounded-xl p-2 transition-colors hover:bg-muted focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
-            >
-              <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-accent text-primary">
-                <Upload className="size-5" aria-hidden="true" />
-              </span>
-              <span className="min-w-0">
-                <span className="block text-sm font-semibold">Upload Files</span>
-                <span className="block truncate text-xs text-muted-foreground">
-                  PDF, TXT, DOCX, CSV (Max 20MB)
+          <form onSubmit={handleStartQuery}>
+            <Input
+              value={claim}
+              onChange={(e) => setClaim(e.target.value)}
+              placeholder="Enter your claim or question here..."
+              aria-label="Claim or question"
+              className="h-14 rounded-xl bg-background px-4 text-base"
+            />
+            <div className="mt-4 grid grid-cols-[minmax(0,1fr)_auto] items-center gap-4">
+              <Link
+                to="/uploads"
+                className="flex min-w-0 items-center gap-3 rounded-xl p-2 transition-colors hover:bg-muted focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
+              >
+                <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-accent text-primary">
+                  <Upload className="size-5" aria-hidden="true" />
                 </span>
-              </span>
-            </Link>
-            <Button asChild size="lg" className="rounded-xl">
-              <Link to="/new-verification">
-                Verify / Ask <ArrowRight className="size-4" />
+                <span className="min-w-0">
+                  <span className="block text-sm font-semibold">Upload Files</span>
+                  <span className="block truncate text-xs text-muted-foreground">
+                    PDF, TXT, DOCX, CSV (Max 20MB)
+                  </span>
+                </span>
               </Link>
-            </Button>
-          </div>
+              <Button type="submit" size="lg" className="rounded-xl">
+                Verify / Ask <ArrowRight className="size-4 ml-1.5" />
+              </Button>
+            </div>
+          </form>
         </SectionCard>
 
         <div className="grid gap-6 sm:grid-cols-2 xl:grid-cols-4">

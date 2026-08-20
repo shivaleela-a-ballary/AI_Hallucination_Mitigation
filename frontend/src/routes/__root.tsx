@@ -132,14 +132,20 @@ function RootShell({ children }: { children: ReactNode }) {
   );
 }
 
+import { AuthProvider } from "../lib/auth-context";
+import { AuthModal } from "../components/auth/auth-modal";
+
 function RootComponent() {
   const { queryClient } = Route.useRouteContext();
 
   return (
     <QueryClientProvider client={queryClient}>
-      {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
-      <Outlet />
-      <Toaster />
+      <AuthProvider>
+        {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
+        <Outlet />
+        <AuthModal />
+        <Toaster />
+      </AuthProvider>
     </QueryClientProvider>
   );
 }
