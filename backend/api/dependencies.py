@@ -49,7 +49,7 @@ def get_current_user(
     if not user:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="User associated with token no longer exists.",
+            detail="Session expired. Please sign in again.",
             headers={"WWW-Authenticate": "Bearer"},
         )
 
@@ -76,3 +76,7 @@ def get_optional_current_user(
         return None
 
     return db_manager.find_user_by_id(user_id)
+
+
+get_current_user_optional = get_optional_current_user
+

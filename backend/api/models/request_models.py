@@ -24,3 +24,14 @@ class VerifyRequest(BaseModel):
 
     claim: str = Field(..., min_length=1, max_length=2000)
     evidence: str = Field(default="", max_length=20000)
+
+
+class CheckAnswerRequest(BaseModel):
+    """Request model for checking an AI-generated paragraph or complex answer."""
+
+    text: str = Field(
+        ...,
+        min_length=5,
+        max_length=5000,
+        description="AI generated answer text to decompose and verify claim-by-claim."
+    )

@@ -15,7 +15,6 @@ The interface is designed to make the verification process understandable by dis
 - Retrieved evidence
 - Source information
 - Verification claims
-- Knowledge graph information
 - Query history
 
 ---

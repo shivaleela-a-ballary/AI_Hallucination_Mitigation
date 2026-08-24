@@ -94,8 +94,8 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { name: "twitter:card", content: "summary_large_image" },
       { name: "twitter:title", content: "Dashboard — AI Hallucination Mitigation System" },
       { name: "twitter:description", content: "Track verifications, start a new claim check and review evidence-based answers from your dashboard." },
-      { property: "og:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/85203f5e-7d40-4237-a7c4-22172fd9f6d0/id-preview-3f346f35--542dba03-b0f2-4eb6-a7b5-e02538fedaff.lovable.app-1785404210334.png" },
-      { name: "twitter:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/85203f5e-7d40-4237-a7c4-22172fd9f6d0/id-preview-3f346f35--542dba03-b0f2-4eb6-a7b5-e02538fedaff.lovable.app-1785404210334.png" },
+      { property: "og:image", content: "/favicon.svg" },
+      { name: "twitter:image", content: "/favicon.svg" },
     ],
     links: [
       {
@@ -108,7 +108,8 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
         rel: "stylesheet",
         href: "https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap",
       },
-      { rel: "icon", href: "/favicon.ico", type: "image/x-icon" },
+      { rel: "icon", href: "/favicon.svg", type: "image/svg+xml" },
+      { rel: "alternate icon", href: "/favicon.ico", type: "image/x-icon" },
     ],
   }),
 

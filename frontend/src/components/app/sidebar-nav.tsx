@@ -2,8 +2,8 @@ import { Link, useRouterState } from "@tanstack/react-router";
 import {
   LayoutDashboard,
   ShieldCheck,
+  FileCheck2,
   MessageCircleQuestion,
-  Share2,
   Library,
   History,
   UploadCloud,
@@ -24,8 +24,8 @@ import robot from "@/assets/robot.png";
 export const navItems = [
   { to: "/", label: "Dashboard", icon: LayoutDashboard },
   { to: "/new-verification", label: "New Verification", icon: ShieldCheck },
+  { to: "/check-answer", label: "Check AI Answer", icon: FileCheck2 },
   { to: "/ask", label: "Ask a Question", icon: MessageCircleQuestion },
-  { to: "/knowledge-graph", label: "Knowledge Graph", icon: Share2 },
   { to: "/sources", label: "Sources", icon: Library },
   { to: "/history", label: "History", icon: History },
   { to: "/uploads", label: "Uploads", icon: UploadCloud },
@@ -37,7 +37,7 @@ export function BrandMark() {
   return (
     <div className="flex min-w-0 items-center gap-3">
       <div className="grid size-10 shrink-0 place-items-center rounded-xl bg-primary text-primary-foreground">
-        <Share2 className="size-5" aria-hidden="true" />
+        <ShieldCheck className="size-5" aria-hidden="true" />
       </div>
       <div className="min-w-0 leading-tight">
         <p className="truncate text-sm font-bold">AI Hallucination</p>

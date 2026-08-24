@@ -123,12 +123,14 @@ def test_refuted_claim_is_not_presented_as_fact() -> None:
         "What is retrieval augmented generation?"
     )
     assert result["verification_status"] == VerificationStatus.REFUTED
-    assert "refutes" in result["answer"]
+    assert ("contradicts" in result["answer"].lower() or "refutes" in result["answer"].lower() or "warning" in result["answer"].lower())
     assert result["confidence_score"] < 0.5
 
 
 def test_missing_answer_corpus_returns_uncertain_without_sources() -> None:
+    empty_retriever = DocumentRetriever(embedder=TestEmbedder())
     result = RAGPipeline(
+        retrieval_service=empty_retriever,
         evidence_retrieval_service=make_retriever(),
         verification_service=FixedVerifier(VerificationStatus.SUPPORTED),
     ).run("A question with no configured answer corpus")

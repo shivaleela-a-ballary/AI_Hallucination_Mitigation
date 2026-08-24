@@ -8,7 +8,7 @@ import {
   MessagesSquare,
   ShieldCheck,
   ShieldQuestion,
-  Share2,
+  Layers,
   Sparkles,
   Upload,
 } from "lucide-react";
@@ -43,7 +43,7 @@ export const Route = createFileRoute("/")({
 
 const overviewSteps = [
   { label: "Retrieve Information", icon: FileSearch },
-  { label: "Build Knowledge Graph", icon: Share2 },
+  { label: "Cross-Reference Evidence", icon: Layers },
   { label: "Verify / Generate Answer", icon: ShieldCheck },
   { label: "Provide Result", icon: Sparkles },
 ];

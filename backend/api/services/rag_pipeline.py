@@ -16,9 +16,9 @@ from retrieval.retrieve import DocumentRetriever
 from retrieval.scifact_documents import load_scifact_documents
 from response_generation.formatter import source_payload
 from verification.knowledge_graph import EvidenceKnowledgeGraph
-from verification.scifact_verify import LocalSciFactVerifier
+from verification.scifact_verify import LocalSciFactVerifier, VerificationStatus
 from api.config import settings
-from verification.verifier import EvidenceRanker, EvidenceScorer
+from verification.verifier import ConfidenceResult, EvidenceRanker, EvidenceScorer
 
 logger = logging.getLogger(__name__)
 
@@ -91,7 +91,12 @@ class RAGPipeline:
         else:
             claims = []
             verifications = []
-        confidence = self.evidence_scorer.score(ranked_evidence, verifications)
+
+        if not answer_documents and not ranked_evidence:
+            from verification.verifier import ConfidenceResult
+            confidence = ConfidenceResult(0.0, VerificationStatus.UNCERTAIN, "No verifiable evidence or answer documents were retrieved.")
+        else:
+            confidence = self.evidence_scorer.score(ranked_evidence, verifications)
         answer = self.llm_service.generate(
             processed_query,
             candidate_answer,

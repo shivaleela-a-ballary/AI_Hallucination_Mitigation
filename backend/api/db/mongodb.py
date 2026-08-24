@@ -39,6 +39,7 @@ class DatabaseManager:
         self._memory_users: Dict[str, dict] = {}
         self._memory_settings: Dict[str, dict] = {}
         self._memory_history: List[dict] = []
+        self._memory_uploads: Dict[str, dict] = {}
 
     def connect(self) -> bool:
         """Attempt to connect to MongoDB Atlas or local MongoDB."""
@@ -395,6 +396,96 @@ class DatabaseManager:
                     new_history.append(item)
             self._memory_history = new_history
             return count
+
+    def save_uploaded_document(self, doc_data: dict) -> dict:
+        """Persist an ingested document record and its parsed chunks."""
+        now = datetime.now(timezone.utc).isoformat()
+        if "id" not in doc_data:
+            doc_data["id"] = str(uuid4())
+        doc_data.setdefault("created_at", now)
+        doc_data.setdefault("uploaded_at", now)
+
+        if self.is_connected and self.db is not None:
+            try:
+                self.db["uploaded_documents"].replace_one(
+                    {"id": doc_data["id"]},
+                    doc_data,
+                    upsert=True,
+                )
+            except Exception as exc:
+                logger.error("MongoDB save_uploaded_document error: %s", exc)
+
+        with self._lock:
+            self._memory_uploads[doc_data["id"]] = dict(doc_data)
+
+        return doc_data
+
+    def get_uploaded_documents(self, user_id: Optional[str] = None) -> List[dict]:
+        """Fetch list of ingested documents."""
+        if self.is_connected and self.db is not None:
+            try:
+                query: Dict[str, Any] = {"user_id": user_id} if user_id else {}
+                docs = list(self.db["uploaded_documents"].find(query, {"_id": 0}).sort("uploaded_at", -1))
+                return docs
+            except Exception as exc:
+                logger.error("MongoDB get_uploaded_documents error: %s", exc)
+
+        with self._lock:
+            docs = list(self._memory_uploads.values())
+            if user_id:
+                docs = [d for d in docs if d.get("user_id") == user_id]
+            docs.sort(key=lambda d: d.get("uploaded_at", ""), reverse=True)
+            return docs
+
+    def get_uploaded_document_by_id(self, doc_id: str) -> Optional[dict]:
+        """Get document details by unique ID."""
+        if self.is_connected and self.db is not None:
+            try:
+                return self.db["uploaded_documents"].find_one({"id": doc_id}, {"_id": 0})
+            except Exception as exc:
+                logger.error("MongoDB get_uploaded_document_by_id error: %s", exc)
+
+        with self._lock:
+            return self._memory_uploads.get(doc_id)
+
+    def delete_uploaded_document(self, doc_id: str, user_id: Optional[str] = None) -> bool:
+        """Delete an uploaded document and its indexed chunks."""
+        deleted = False
+        if self.is_connected and self.db is not None:
+            try:
+                query: Dict[str, Any] = {"id": doc_id}
+                if user_id:
+                    query["user_id"] = user_id
+                res = self.db["uploaded_documents"].delete_one(query)
+                deleted = res.deleted_count > 0
+            except Exception as exc:
+                logger.error("MongoDB delete_uploaded_document error: %s", exc)
+
+        with self._lock:
+            if doc_id in self._memory_uploads:
+                if user_id and self._memory_uploads[doc_id].get("user_id") != user_id:
+                    pass
+                else:
+                    del self._memory_uploads[doc_id]
+                    deleted = True
+
+        return deleted
+
+    def get_all_uploaded_passages(self) -> List[dict]:
+        """Return all parsed chunks across all uploaded documents for evidence retrieval."""
+        all_docs = self.get_uploaded_documents()
+        passages: list[dict] = []
+        for doc in all_docs:
+            chunks = doc.get("chunks", [])
+            for chunk in chunks:
+                passages.append({
+                    "title": chunk.get("title", doc.get("title", "Uploaded Document")),
+                    "content": chunk.get("content", ""),
+                    "source": f"User Upload: {doc.get('filename', doc.get('title', 'Document'))}",
+                    "source_type": "user_upload",
+                    "doc_id": doc.get("id"),
+                })
+        return passages
 
     def get_stats(self) -> dict:
         """Returns statistics on MongoDB connectivity and collection counts."""

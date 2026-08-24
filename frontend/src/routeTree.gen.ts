@@ -12,8 +12,8 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AboutRouteImport } from './routes/about'
 import { Route as AskRouteImport } from './routes/ask'
+import { Route as CheckAnswerRouteImport } from './routes/check-answer'
 import { Route as HistoryRouteImport } from './routes/history'
-import { Route as KnowledgeGraphRouteImport } from './routes/knowledge-graph'
 import { Route as NewVerificationRouteImport } from './routes/new-verification'
 import { Route as SettingsRouteImport } from './routes/settings'
 import { Route as SourcesRouteImport } from './routes/sources'
@@ -35,14 +35,14 @@ const AskRoute = AskRouteImport.update({
   path: '/ask',
   getParentRoute: () => rootRouteImport,
 } as any)
+const CheckAnswerRoute = CheckAnswerRouteImport.update({
+  id: '/check-answer',
+  path: '/check-answer',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const HistoryRoute = HistoryRouteImport.update({
   id: '/history',
   path: '/history',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const KnowledgeGraphRoute = KnowledgeGraphRouteImport.update({
-  id: '/knowledge-graph',
-  path: '/knowledge-graph',
   getParentRoute: () => rootRouteImport,
 } as any)
 const NewVerificationRoute = NewVerificationRouteImport.update({
@@ -75,8 +75,8 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/about': typeof AboutRoute
   '/ask': typeof AskRoute
+  '/check-answer': typeof CheckAnswerRoute
   '/history': typeof HistoryRoute
-  '/knowledge-graph': typeof KnowledgeGraphRoute
   '/new-verification': typeof NewVerificationRoute
   '/settings': typeof SettingsRoute
   '/sources': typeof SourcesRoute
@@ -87,8 +87,8 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/about': typeof AboutRoute
   '/ask': typeof AskRoute
+  '/check-answer': typeof CheckAnswerRoute
   '/history': typeof HistoryRoute
-  '/knowledge-graph': typeof KnowledgeGraphRoute
   '/new-verification': typeof NewVerificationRoute
   '/settings': typeof SettingsRoute
   '/sources': typeof SourcesRoute
@@ -100,8 +100,8 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/about': typeof AboutRoute
   '/ask': typeof AskRoute
+  '/check-answer': typeof CheckAnswerRoute
   '/history': typeof HistoryRoute
-  '/knowledge-graph': typeof KnowledgeGraphRoute
   '/new-verification': typeof NewVerificationRoute
   '/settings': typeof SettingsRoute
   '/sources': typeof SourcesRoute
@@ -114,8 +114,8 @@ export interface FileRouteTypes {
     | '/'
     | '/about'
     | '/ask'
+    | '/check-answer'
     | '/history'
-    | '/knowledge-graph'
     | '/new-verification'
     | '/settings'
     | '/sources'
@@ -126,8 +126,8 @@ export interface FileRouteTypes {
     | '/'
     | '/about'
     | '/ask'
+    | '/check-answer'
     | '/history'
-    | '/knowledge-graph'
     | '/new-verification'
     | '/settings'
     | '/sources'
@@ -138,8 +138,8 @@ export interface FileRouteTypes {
     | '/'
     | '/about'
     | '/ask'
+    | '/check-answer'
     | '/history'
-    | '/knowledge-graph'
     | '/new-verification'
     | '/settings'
     | '/sources'
@@ -151,8 +151,8 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AboutRoute: typeof AboutRoute
   AskRoute: typeof AskRoute
+  CheckAnswerRoute: typeof CheckAnswerRoute
   HistoryRoute: typeof HistoryRoute
-  KnowledgeGraphRoute: typeof KnowledgeGraphRoute
   NewVerificationRoute: typeof NewVerificationRoute
   SettingsRoute: typeof SettingsRoute
   SourcesRoute: typeof SourcesRoute
@@ -183,18 +183,18 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AskRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/check-answer': {
+      id: '/check-answer'
+      path: '/check-answer'
+      fullPath: '/check-answer'
+      preLoaderRoute: typeof CheckAnswerRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/history': {
       id: '/history'
       path: '/history'
       fullPath: '/history'
       preLoaderRoute: typeof HistoryRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/knowledge-graph': {
-      id: '/knowledge-graph'
-      path: '/knowledge-graph'
-      fullPath: '/knowledge-graph'
-      preLoaderRoute: typeof KnowledgeGraphRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/new-verification': {
@@ -239,8 +239,8 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AboutRoute: AboutRoute,
   AskRoute: AskRoute,
+  CheckAnswerRoute: CheckAnswerRoute,
   HistoryRoute: HistoryRoute,
-  KnowledgeGraphRoute: KnowledgeGraphRoute,
   NewVerificationRoute: NewVerificationRoute,
   SettingsRoute: SettingsRoute,
   SourcesRoute: SourcesRoute,

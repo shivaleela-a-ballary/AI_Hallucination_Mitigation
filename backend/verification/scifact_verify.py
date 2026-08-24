@@ -7,7 +7,7 @@ from dataclasses import dataclass
 from enum import Enum
 from typing import Sequence
 
-from retrieval.retrieve import RetrievedDocument
+from retrieval.providers.base import RetrievedDocument
 from .scifact.inference import SciFactInference
 
 
@@ -29,13 +29,13 @@ class ClaimVerification:
     status: VerificationStatus
     evidence_titles: list[str]
     evidence_score: float
-    method: str = "semantic-evidence baseline (not a trained SciFact model)"
+    method: str = "semantic-evidence baseline with stance analysis"
 
 
 class BaselineSciFactVerifier:
-    """A transparent evidence-similarity baseline, not a SciFact-trained model."""
+    """A transparent evidence-similarity and stance baseline, not a SciFact-trained model."""
 
-    support_threshold = 0.55
+    support_threshold = 0.45
 
     def extract_claims(self, text: str, evidence: Sequence[RetrievedDocument]) -> list[Claim]:
         sentences = [part.strip() for part in re.split(r"(?<=[.!?])\s+", text) if part.strip()]
@@ -49,20 +49,31 @@ class BaselineSciFactVerifier:
                 for claim in claims
             ]
 
-        top_score = max(max(document.similarity_score, 0.0) for document in evidence)
-        evidence_titles = [document.title for document in evidence]
+        # Lazy import of ContradictionDetector
+        from .contradiction import ContradictionDetector
+        detector = ContradictionDetector()
+
         results: list[ClaimVerification] = []
+        evidence_titles = [document.title for document in evidence]
+        top_score = max(max(document.similarity_score, 0.0) for document in evidence)
+
         for claim in claims:
-            claim_words = set(re.findall(r"[a-zA-Z]{3,}", claim.text.lower()))
-            evidence_text = " ".join(document.content.lower() for document in evidence)
-            negated = any(f"not {word}" in evidence_text for word in claim_words)
-            if negated:
-                status = VerificationStatus.REFUTED
-            elif top_score >= self.support_threshold:
-                status = VerificationStatus.SUPPORTED
-            else:
+            summary = detector.analyze(claim.text, evidence)
+            status = summary.overall_status
+
+            if status == VerificationStatus.SUPPORTED and top_score < self.support_threshold:
                 status = VerificationStatus.UNCERTAIN
-            results.append(ClaimVerification(claim.text, status, evidence_titles, top_score))
+
+            conf_score = top_score * (1.0 - summary.confidence_penalty)
+            results.append(
+                ClaimVerification(
+                    claim=claim.text,
+                    status=status,
+                    evidence_titles=evidence_titles,
+                    evidence_score=round(float(conf_score), 4),
+                    method="semantic-evidence baseline with stance analysis",
+                )
+            )
         return results
 
 

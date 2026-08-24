@@ -24,7 +24,19 @@ class HistoryStore:
 
     def get(self, item_id: str) -> dict | None:
         with self._lock:
-            return next((item for item in self._items if item["id"] == item_id), None)
+            return next((item for item in self._items if item.get("id") == item_id), None)
+
+    def delete(self, item_id: str) -> bool:
+        with self._lock:
+            initial_len = len(self._items)
+            self._items = [item for item in self._items if item.get("id") != item_id]
+            return len(self._items) < initial_len
+
+    def clear(self) -> int:
+        with self._lock:
+            count = len(self._items)
+            self._items.clear()
+            return count
 
 
 history_store = HistoryStore()

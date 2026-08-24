@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { FileSearch, Share2, ShieldCheck, Sparkles } from "lucide-react";
+import { FileSearch, Layers, ShieldCheck, Sparkles } from "lucide-react";
 
 import { AppShell } from "@/components/app/app-shell";
 import { PageHeader, SectionCard } from "@/components/app/ui-kit";
@@ -12,7 +12,7 @@ export const Route = createFileRoute("/about")({
       {
         name: "description",
         content:
-          "How the AI Hallucination Mitigation System retrieves evidence, builds knowledge graphs and verifies answers.",
+          "How the AI Hallucination Mitigation System retrieves evidence, structures knowledge and verifies answers.",
       },
       { property: "og:title", content: "About Us — AI Hallucination Mitigation System" },
       { property: "og:description", content: "How we ground AI answers in verifiable evidence." },
@@ -23,7 +23,7 @@ export const Route = createFileRoute("/about")({
 
 const pillars = [
   { icon: FileSearch, title: "Retrieve", text: "Pull passages from trusted corpora and your own documents." },
-  { icon: Share2, title: "Structure", text: "Build a knowledge graph of entities and their relationships." },
+  { icon: Layers, title: "Structure", text: "Extract key evidence passages and cross-reference factual assertions." },
   { icon: ShieldCheck, title: "Verify", text: "Score each claim against retrieved evidence, not model memory." },
   { icon: Sparkles, title: "Explain", text: "Return an answer with citations and a transparent confidence score." },
 ];

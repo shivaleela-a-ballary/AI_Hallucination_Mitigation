@@ -13,29 +13,9 @@ from preprocessing.embeddings import SentenceTransformerEmbedder
 from preprocessing.text_cleaning import clean_text
 
 from .faiss_index import FaissVectorIndex
+from .providers.base import Document, RetrievedDocument
 
 logger = logging.getLogger(__name__)
-
-
-@dataclass(frozen=True)
-class Document:
-    """A document supplied to the retriever before it is indexed."""
-
-    title: str
-    content: str
-    source: str
-    url: str | None = None
-
-
-@dataclass(frozen=True)
-class RetrievedDocument:
-    """A document returned by semantic search with cosine similarity."""
-
-    title: str
-    content: str
-    source: str
-    similarity_score: float
-    url: str | None = None
 
 
 class DocumentRetriever:
@@ -140,4 +120,9 @@ class DocumentRetriever:
             content=clean_text(document.content),
             source=clean_text(document.source),
             url=document.url.strip() if document.url else None,
+            doi=document.doi,
+            pmid=document.pmid,
+            publication_date=document.publication_date,
+            authors=document.authors,
+            source_type=document.source_type,
         )

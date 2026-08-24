@@ -75,8 +75,14 @@ function HistoryPage() {
     if (!confirm(`Delete verification record for "${text.slice(0, 40)}..."?`)) return;
     setDeletingId(id);
     try {
-      if (isAuthenticated) {
-        await api.user.deleteHistoryItem(id);
+      try {
+        if (isAuthenticated) {
+          await api.user.deleteHistoryItem(id);
+        } else {
+          await api.deleteHistoryItem(id);
+        }
+      } catch {
+        await api.deleteHistoryItem(id);
       }
       setVerifications((prev) => prev.filter((item) => item.id !== id));
       toast.success("Record deleted successfully.");
@@ -90,11 +96,17 @@ function HistoryPage() {
   const handleClearAll = async () => {
     if (!confirm("Are you sure you want to clear your verification history? This cannot be undone.")) return;
     try {
-      if (isAuthenticated) {
-        await api.user.clearHistory();
+      try {
+        if (isAuthenticated) {
+          await api.user.clearHistory();
+        } else {
+          await api.clearHistory();
+        }
+      } catch {
+        await api.clearHistory();
       }
       setVerifications([]);
-      toast.success("Verification history cleared.");
+      toast.success("Verification history cleared successfully.");
     } catch (cause) {
       toast.error(cause instanceof Error ? cause.message : "Failed to clear history.");
     }

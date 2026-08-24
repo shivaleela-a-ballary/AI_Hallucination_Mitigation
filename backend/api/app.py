@@ -13,6 +13,8 @@ from api.routes.chat import router as chat_router
 from api.routes.health import router as health_router
 from api.routes.history import router as history_router
 from api.routes.verify import router as verify_router
+from api.routes.check_answer import router as check_answer_router
+from api.routes.uploads import router as uploads_router
 
 from api.config import settings
 from api.db.mongodb import db_manager
@@ -32,7 +34,7 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(
     title=settings.APP_NAME,
-    description="Backend API for Retrieval-Augmented Generation, Verification, and Authentication",
+    description="Backend API for Multi-Source Evidence Retrieval, Verification, and Hallucination Mitigation",
     version=settings.APP_VERSION,
     lifespan=lifespan,
 )
@@ -55,6 +57,8 @@ app.include_router(chat_router, prefix="/api")
 app.include_router(health_router, prefix="/api")
 app.include_router(history_router, prefix="/api")
 app.include_router(verify_router, prefix="/api")
+app.include_router(check_answer_router, prefix="/api")
+app.include_router(uploads_router, prefix="/api")
 
 
 @app.get("/")
@@ -64,4 +68,3 @@ def root():
         "status": "running",
         "version": settings.APP_VERSION,
     }
-

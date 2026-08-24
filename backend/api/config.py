@@ -20,7 +20,7 @@ class Settings:
 
     APP_VERSION = os.getenv(
         "APP_VERSION",
-        "1.0.0"
+        "2.0.0"
     )
 
     HOST = os.getenv(
@@ -51,7 +51,7 @@ class Settings:
         os.getenv("TOP_K", 5)
     )
 
-    RETRIEVAL_MIN_SIMILARITY = float(os.getenv("RETRIEVAL_MIN_SIMILARITY", "0.35"))
+    RETRIEVAL_MIN_SIMILARITY = float(os.getenv("RETRIEVAL_MIN_SIMILARITY", "0.15"))
 
     MODEL_NAME = os.getenv(
         "MODEL_NAME",
@@ -64,13 +64,27 @@ class Settings:
     SCIFACT_CORPUS_PATH = Path(os.getenv("SCIFACT_CORPUS_PATH", PROJECT_ROOT / "data" / "scifact" / "corpus.jsonl"))
     SCIFACT_MODEL_PATH = Path(os.getenv("SCIFACT_MODEL_PATH", PROJECT_ROOT / "models" / "scifact"))
     ANSWER_CORPUS_PATH = os.getenv("ANSWER_CORPUS_PATH", "")
+
+    # Multi-source & PubMed Configuration
+    PUBMED_ENABLED = os.getenv("PUBMED_ENABLED", "true").lower() == "true"
+    PUBMED_EMAIL = os.getenv("PUBMED_EMAIL", "researcher@example.com")
+    PUBMED_API_KEY = os.getenv("PUBMED_API_KEY", "")
+    PUBMED_TIMEOUT_SECONDS = float(os.getenv("PUBMED_TIMEOUT_SECONDS", "8.0"))
+    PUBMED_TOP_K = int(os.getenv("PUBMED_TOP_K", "10"))
+
+    # Wikipedia Provider Configuration
+    WIKIPEDIA_ENABLED = os.getenv("WIKIPEDIA_ENABLED", "true").lower() == "true"
     KNOWLEDGE_PROVIDER = os.getenv("KNOWLEDGE_PROVIDER", "wikipedia").strip().lower()
     KNOWLEDGE_API_URL = os.getenv("KNOWLEDGE_API_URL", "https://en.wikipedia.org/w/api.php")
-    KNOWLEDGE_TIMEOUT_SECONDS = float(os.getenv("KNOWLEDGE_TIMEOUT_SECONDS", "8"))
-    KNOWLEDGE_TOP_K = int(os.getenv("KNOWLEDGE_TOP_K", "8"))
-    KNOWLEDGE_MIN_SIMILARITY = float(os.getenv("KNOWLEDGE_MIN_SIMILARITY", "0.45"))
-    SCIFACT_MIN_SIMILARITY = float(os.getenv("SCIFACT_MIN_SIMILARITY", "0.50"))
+    KNOWLEDGE_TIMEOUT_SECONDS = float(os.getenv("KNOWLEDGE_TIMEOUT_SECONDS", "8.0"))
+    KNOWLEDGE_TOP_K = int(os.getenv("KNOWLEDGE_TOP_K", "5"))
+    KNOWLEDGE_MIN_SIMILARITY = float(os.getenv("KNOWLEDGE_MIN_SIMILARITY", "0.15"))
+    SCIFACT_MIN_SIMILARITY = float(os.getenv("SCIFACT_MIN_SIMILARITY", "0.18"))
     SCIFACT_VERIFY_GENERAL = os.getenv("SCIFACT_VERIFY_GENERAL", "false").lower() == "true"
+
+    # Multi-source Pipeline Settings
+    CANDIDATE_POOL_SIZE = int(os.getenv("CANDIDATE_POOL_SIZE", "15"))
+    DEDUPLICATION_THRESHOLD = float(os.getenv("DEDUPLICATION_THRESHOLD", "0.85"))
 
     # MongoDB Atlas Configuration
     MONGODB_URI = os.getenv(
