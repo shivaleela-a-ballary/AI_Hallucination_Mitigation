@@ -90,6 +90,8 @@ class EvidenceReranker:
             source_weight = 1.0
             if doc.source_type in {"peer_reviewed_journal", "scientific_corpus"}:
                 source_weight = 1.05
+            elif doc.source_type in {"preprint", "scientific"}:
+                source_weight = 1.02
             elif doc.source_type == "encyclopedia":
                 source_weight = 1.0
 

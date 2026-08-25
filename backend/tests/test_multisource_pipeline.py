@@ -55,13 +55,29 @@ def test_deduplicator_content_jaccard_similarity() -> None:
 
 
 def test_multisource_manager_aggregates_providers() -> None:
-    p1 = MockProvider("P1", [Document("Doc1", "Content1", "P1")])
-    p2 = MockProvider("P2", [Document("Doc2", "Content2", "P2")])
-    mgr = MultiSourceEvidenceManager(providers=[p1, p2])
-    candidates = mgr.retrieve_candidates("test query")
-    assert len(candidates) == 2
+    p1 = MockProvider("PubMed", [Document("Doc PubMed", "Biomedical finding", "PubMed", pmid="1111")])
+    p2 = MockProvider("Semantic Scholar", [Document("Doc S2", "AI finding", "Semantic Scholar", doi="10.1000/1")])
+    p3 = MockProvider("arXiv", [Document("Doc arXiv", "Preprint finding", "arXiv", url="https://arxiv.org/abs/2301.0001")])
+    p4 = MockProvider("Crossref", [Document("Doc Crossref", "Journal finding", "Crossref", doi="10.1000/2")])
+    mgr = MultiSourceEvidenceManager(providers=[p1, p2, p3, p4])
+    candidates = mgr.retrieve_candidates("machine learning biology")
+    assert len(candidates) == 4
     sources = {d.source for d in candidates}
-    assert sources == {"P1", "P2"}
+    assert sources == {"PubMed", "Semantic Scholar", "arXiv", "Crossref"}
+
+
+def test_deduplicator_across_heterogeneous_providers() -> None:
+    deduplicator = EvidenceDeduplicator()
+    docs = [
+        Document("Genome editing with Cas9", "Original publication.", "PubMed", doi="10.1000/cas9", pmid="9999"),
+        Document("Genome editing with Cas9 (S2)", "Duplicate abstract from S2.", "Semantic Scholar", doi="10.1000/cas9"),
+        Document("Cas9 Genome Editing Advances", "arXiv preprint version.", "arXiv", doi="10.1000/cas9"),
+        Document("Unique Crossref Publication", "Separate Crossref study.", "Crossref", doi="10.1000/unique"),
+    ]
+    unique = deduplicator.deduplicate(docs)
+    assert len(unique) == 2
+    assert unique[0].title == "Genome editing with Cas9"
+    assert unique[1].title == "Unique Crossref Publication"
 
 
 class SimpleEmbedder:
@@ -77,10 +93,11 @@ class SimpleEmbedder:
 def test_evidence_reranker_scores_and_orders() -> None:
     reranker = EvidenceReranker(embedder=SimpleEmbedder(), min_similarity=0.1)
     docs = [
-        Document("Title A", "MicroRNA regulation and translation.", "SciFact", source_type="scientific_corpus"),
-        Document("Title B", "Unrelated geology rock formations.", "Wikipedia", source_type="encyclopedia"),
+        Document("Title A", "MicroRNA regulation and translation.", "PubMed", source_type="peer_reviewed_journal"),
+        Document("Title B", "arXiv preprint on deep models.", "arXiv", source_type="preprint"),
+        Document("Title C", "Unrelated geology rock formations.", "Wikipedia", source_type="encyclopedia"),
     ]
-    ranked = reranker.rerank("MicroRNA", docs, top_k=2)
-    assert len(ranked) == 2
+    ranked = reranker.rerank("MicroRNA", docs, top_k=3)
+    assert len(ranked) == 3
     assert ranked[0].similarity_score >= ranked[1].similarity_score
     assert ranked[0].title == "Title A"

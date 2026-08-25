@@ -11,9 +11,12 @@ import logging
 from typing import Sequence
 
 from api.config import settings
+from .arxiv_provider import ArxivProvider
 from .base import Document, EvidenceProvider
+from .crossref_provider import CrossrefProvider
 from .pubmed_provider import PubMedProvider
 from .scifact_provider import SciFactProvider
+from .semantic_scholar_provider import SemanticScholarProvider
 from .uploads_provider import UserUploadsProvider
 from .wikipedia_provider import WikipediaProvider
 
@@ -22,12 +25,16 @@ logger = logging.getLogger(__name__)
 
 class MultiSourceEvidenceManager:
     """
-    Coordinates multi-source candidate evidence harvesting from all active providers.
+    Coordinates multi-source candidate evidence harvesting from all active providers:
+    PubMed, Semantic Scholar, arXiv, Crossref, SciFact, Wikipedia, and User Uploads.
     """
     def __init__(
         self,
         providers: Sequence[EvidenceProvider] | None = None,
         enable_pubmed: bool | None = None,
+        enable_semantic_scholar: bool | None = None,
+        enable_arxiv: bool | None = None,
+        enable_crossref: bool | None = None,
         enable_scifact: bool | None = None,
         enable_wikipedia: bool | None = None,
         enable_uploads: bool | None = True,
@@ -40,14 +47,29 @@ class MultiSourceEvidenceManager:
             if enable_uploads is not False:
                 self.providers.append(UserUploadsProvider())
 
-            # SciFact (Local)
+            # SciFact (Local Corpus)
             if enable_scifact is not False:
                 self.providers.append(SciFactProvider())
 
-            # PubMed (NCBI)
+            # 1. PubMed (NCBI Entrez)
             is_pubmed_enabled = getattr(settings, "PUBMED_ENABLED", True) if enable_pubmed is None else enable_pubmed
             if is_pubmed_enabled:
                 self.providers.append(PubMedProvider())
+
+            # 2. Semantic Scholar Graph API
+            is_s2_enabled = getattr(settings, "SEMANTIC_SCHOLAR_ENABLED", True) if enable_semantic_scholar is None else enable_semantic_scholar
+            if is_s2_enabled:
+                self.providers.append(SemanticScholarProvider())
+
+            # 3. arXiv Open Access API
+            is_arxiv_enabled = getattr(settings, "ARXIV_ENABLED", True) if enable_arxiv is None else enable_arxiv
+            if is_arxiv_enabled:
+                self.providers.append(ArxivProvider())
+
+            # 4. Crossref REST API
+            is_crossref_enabled = getattr(settings, "CROSSREF_ENABLED", True) if enable_crossref is None else enable_crossref
+            if is_crossref_enabled:
+                self.providers.append(CrossrefProvider())
 
             # Wikipedia
             is_wiki_enabled = getattr(settings, "WIKIPEDIA_ENABLED", True) if enable_wikipedia is None else enable_wikipedia

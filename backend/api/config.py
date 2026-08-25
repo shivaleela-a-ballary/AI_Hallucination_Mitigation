@@ -65,12 +65,30 @@ class Settings:
     SCIFACT_MODEL_PATH = Path(os.getenv("SCIFACT_MODEL_PATH", PROJECT_ROOT / "models" / "scifact"))
     ANSWER_CORPUS_PATH = os.getenv("ANSWER_CORPUS_PATH", "")
 
-    # Multi-source & PubMed Configuration
+    # Multi-source & Scientific Evidence Providers
+    # 1. PubMed (NCBI Entrez)
     PUBMED_ENABLED = os.getenv("PUBMED_ENABLED", "true").lower() == "true"
     PUBMED_EMAIL = os.getenv("PUBMED_EMAIL", "researcher@example.com")
     PUBMED_API_KEY = os.getenv("PUBMED_API_KEY", "")
     PUBMED_TIMEOUT_SECONDS = float(os.getenv("PUBMED_TIMEOUT_SECONDS", "8.0"))
     PUBMED_TOP_K = int(os.getenv("PUBMED_TOP_K", "10"))
+
+    # 2. Semantic Scholar Graph API
+    SEMANTIC_SCHOLAR_ENABLED = os.getenv("SEMANTIC_SCHOLAR_ENABLED", "true").lower() == "true"
+    SEMANTIC_SCHOLAR_API_KEY = os.getenv("SEMANTIC_SCHOLAR_API_KEY", "")
+    SEMANTIC_SCHOLAR_TIMEOUT_SECONDS = float(os.getenv("SEMANTIC_SCHOLAR_TIMEOUT_SECONDS", "8.0"))
+    SEMANTIC_SCHOLAR_TOP_K = int(os.getenv("SEMANTIC_SCHOLAR_TOP_K", "10"))
+
+    # 3. arXiv Open Access API
+    ARXIV_ENABLED = os.getenv("ARXIV_ENABLED", "true").lower() == "true"
+    ARXIV_TIMEOUT_SECONDS = float(os.getenv("ARXIV_TIMEOUT_SECONDS", "8.0"))
+    ARXIV_TOP_K = int(os.getenv("ARXIV_TOP_K", "10"))
+
+    # 4. Crossref REST API
+    CROSSREF_ENABLED = os.getenv("CROSSREF_ENABLED", "true").lower() == "true"
+    CROSSREF_EMAIL = os.getenv("CROSSREF_EMAIL", "researcher@example.com")
+    CROSSREF_TIMEOUT_SECONDS = float(os.getenv("CROSSREF_TIMEOUT_SECONDS", "8.0"))
+    CROSSREF_TOP_K = int(os.getenv("CROSSREF_TOP_K", "10"))
 
     # Wikipedia Provider Configuration
     WIKIPEDIA_ENABLED = os.getenv("WIKIPEDIA_ENABLED", "true").lower() == "true"
