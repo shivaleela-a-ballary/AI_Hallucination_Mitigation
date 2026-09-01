@@ -88,6 +88,7 @@ def check_ai_answer(
     supported_count = 0
     refuted_count = 0
     uncertain_count = 0
+    unverified_count = 0
     reliability_scores: list[float] = []
 
     for claim in claims:
@@ -100,17 +101,17 @@ def check_ai_answer(
             verified_claims.append(
                 CheckAnswerClaim(
                     claim=claim,
-                    verification_status="UNCERTAIN",
+                    verification_status="UNVERIFIED",
                     confidence_score=0.0,
                     hallucination_risk="MEDIUM",
                     evidence_count=0,
                     supporting_evidence=[],
                     contradicting_evidence=[],
-                    explanation="No indexed evidence found to verify this specific assertion.",
+                    explanation="No sufficiently matching evidence found in current corpora to verify or refute this assertion.",
                 )
             )
-            uncertain_count += 1
-            reliability_scores.append(0.30)
+            unverified_count += 1
+            reliability_scores.append(0.50)
             continue
 
         contradiction_summary = contradiction_detector.analyze(claim, evidence)
@@ -131,6 +132,9 @@ def check_ai_answer(
         elif status == VerificationStatus.REFUTED:
             refuted_count += 1
             reliability_scores.append(0.0)
+        elif status == VerificationStatus.UNVERIFIED:
+            unverified_count += 1
+            reliability_scores.append(0.50)
         else:
             uncertain_count += 1
             reliability_scores.append(0.40)
@@ -167,7 +171,7 @@ def check_ai_answer(
 
     summary_text = (
         f"Evaluated {total_claims} claim(s): {supported_count} Supported, "
-        f"{refuted_count} Refuted, {uncertain_count} Uncertain. "
+        f"{refuted_count} Refuted, {uncertain_count} Uncertain, {unverified_count} Unverified. "
         f"Overall Reliability: {overall_reliability}%, Hallucination Risk: {overall_risk}."
     )
 
@@ -182,6 +186,7 @@ def check_ai_answer(
         "supported_claims_count": supported_count,
         "refuted_claims_count": refuted_count,
         "uncertain_claims_count": uncertain_count,
+        "unverified_claims_count": unverified_count,
         "claims": [c.model_dump() for c in verified_claims],
         "summary": summary_text,
     }

@@ -59,7 +59,7 @@ function Dashboard() {
     if (e) e.preventDefault();
     const text = claim.trim();
     if (!text) {
-      navigate({ to: "/new-verification" });
+      navigate({ to: "/new-verification", search: { claim: "", evidence: "" } });
       return;
     }
 
@@ -75,7 +75,7 @@ function Dashboard() {
     } else {
       navigate({
         to: "/new-verification",
-        search: { claim: text },
+        search: { claim: text, evidence: "" },
       });
     }
   };
