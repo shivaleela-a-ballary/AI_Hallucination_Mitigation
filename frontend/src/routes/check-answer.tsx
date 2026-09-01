@@ -7,6 +7,7 @@ import {
   CheckCircle2,
   XCircle,
   HelpCircle,
+  Info,
   Loader2,
   FileCheck2,
   ExternalLink,
@@ -39,6 +40,13 @@ function getStatusBadge(status?: string) {
       label: "REFUTED",
       icon: XCircle,
       color: "bg-rose-500/15 text-rose-600 dark:text-rose-400 border-rose-500/30",
+    };
+  }
+  if (norm === "UNVERIFIED") {
+    return {
+      label: "UNVERIFIED",
+      icon: Info,
+      color: "bg-sky-500/15 text-sky-600 dark:text-sky-400 border-sky-500/30",
     };
   }
   return {

@@ -69,13 +69,12 @@ def test_upload_file_api() -> None:
 
 
 def test_upload_image_file_api() -> None:
-    from PIL import Image
-
-    # Generate a simple test image in memory
-    img = Image.new("RGB", (200, 100), color=(73, 109, 137))
-    img_byte_arr = io.BytesIO()
-    img.save(img_byte_arr, format="PNG")
-    img_bytes = img_byte_arr.getvalue()
+    # 1x1 raw valid PNG bytes in memory
+    img_bytes = (
+        b"\x89PNG\r\n\x1a\n\x00\x00\x00\rIHDR\x00\x00\x00\x01\x00\x00\x00\x01\x08\x06\x00\x00\x00"
+        b"\x1f\x15c4\x00\x00\x00\rIDATx\x9cc\xf8\xff\xff?\x03\x00\x08\xfc\x02\xfe\xa7\x9a\xa0\xa0"
+        b"\x00\x00\x00\x00IEND\xaeB`\x82"
+    )
 
     client = TestClient(app)
     files = {"file": ("pasted_screenshot.png", io.BytesIO(img_bytes), "image/png")}

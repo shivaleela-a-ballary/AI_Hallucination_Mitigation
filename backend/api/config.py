@@ -41,6 +41,9 @@ class Settings:
         "OPENAI_API_KEY",
         ""
     )
+    OPENAI_BASE_URL = os.getenv("OPENAI_BASE_URL", "")
+    GEMINI_API_KEY = os.getenv("GEMINI_API_KEY", "")
+    HF_NLI_MODEL = os.getenv("HF_NLI_MODEL", "cross-encoder/nli-deberta-v3-small")
 
     LOG_LEVEL = os.getenv(
         "LOG_LEVEL",

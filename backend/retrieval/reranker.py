@@ -1,7 +1,7 @@
 """
 Evidence Reranker.
 Scores and ranks multi-source candidate documents against a claim/query.
-Uses dense semantic similarity with exact keyword coverage and source authority weighting.
+Uses dense semantic similarity with exact keyword coverage, fiction filtering, and source authority weighting.
 """
 
 from __future__ import annotations
@@ -16,6 +16,13 @@ from preprocessing.embeddings import SentenceTransformerEmbedder
 from .providers.base import Document, RetrievedDocument
 
 logger = logging.getLogger(__name__)
+
+# Markers indicating non-scientific / fictional / pop-culture content to filter from scientific verification
+NON_SCIENTIFIC_MARKERS = {
+    "video game", "game series", "square enix", "walt disney", "manga series",
+    "anime series", "fictional universe", "fictional character", "comic book",
+    "superhero", "soundtrack", "collectible card", "light novel", "film series",
+}
 
 
 def extract_keywords(text: str) -> set[str]:
@@ -34,6 +41,7 @@ class EvidenceReranker:
     """
     Reranks candidate evidence passages against a query using hybrid scoring:
     Dense embedding similarity (70%) + Keyword overlap (20%) + Source authority (10%).
+    Penalizes non-scientific / pop-culture passages.
     """
     def __init__(
         self,
@@ -68,6 +76,11 @@ class EvidenceReranker:
         scored_results: list[RetrievedDocument] = []
 
         for idx, doc in enumerate(candidates):
+            doc_lower = f"{doc.title.lower()} {doc.content.lower()}"
+
+            # Filter out non-scientific / entertainment pages for scientific claims
+            is_fiction = any(marker in doc_lower for marker in NON_SCIENTIFIC_MARKERS)
+
             doc_vec = doc_embeddings[idx]
             # 1. Cosine similarity
             norm_q = np.linalg.norm(query_embedding)
@@ -86,12 +99,14 @@ class EvidenceReranker:
             else:
                 kw_overlap = 0.0
 
-            # 3. Source authority boost
+            # 3. Source authority boost / fiction penalty
             source_weight = 1.0
-            if doc.source_type in {"peer_reviewed_journal", "scientific_corpus"}:
-                source_weight = 1.05
+            if is_fiction:
+                source_weight = 0.20  # Heavily penalize fiction/video games
+            elif doc.source_type in {"peer_reviewed_journal", "scientific_corpus"}:
+                source_weight = 1.08
             elif doc.source_type in {"preprint", "scientific"}:
-                source_weight = 1.02
+                source_weight = 1.04
             elif doc.source_type == "encyclopedia":
                 source_weight = 1.0
 

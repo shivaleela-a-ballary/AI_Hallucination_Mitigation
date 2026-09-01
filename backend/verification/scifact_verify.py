@@ -15,6 +15,7 @@ class VerificationStatus(str, Enum):
     SUPPORTED = "SUPPORTED"
     REFUTED = "REFUTED"
     UNCERTAIN = "UNCERTAIN"
+    UNVERIFIED = "UNVERIFIED"
 
 
 @dataclass(frozen=True)
@@ -45,7 +46,7 @@ class BaselineSciFactVerifier:
     def verify(self, claims: Sequence[Claim], evidence: Sequence[RetrievedDocument]) -> list[ClaimVerification]:
         if not evidence:
             return [
-                ClaimVerification(claim.text, VerificationStatus.UNCERTAIN, [], 0.0)
+                ClaimVerification(claim.text, VerificationStatus.UNVERIFIED, [], 0.0)
                 for claim in claims
             ]
 
@@ -89,15 +90,21 @@ class LocalSciFactVerifier:
 
     def verify(self, claims: Sequence[Claim], evidence: Sequence[RetrievedDocument]) -> list[ClaimVerification]:
         if not evidence:
-            return [ClaimVerification(claim.text, VerificationStatus.UNCERTAIN, [], 0.0, "local SciFact checkpoint") for claim in claims]
+            return [ClaimVerification(claim.text, VerificationStatus.UNVERIFIED, [], 0.0, "local SciFact checkpoint") for claim in claims]
         evidence_text = "\n".join(item.content for item in evidence)
         titles = [item.title for item in evidence]
         results: list[ClaimVerification] = []
         for claim in claims:
             prediction = self.inference.predict(claim.text, evidence_text)
+            status_val = prediction.label.upper()
+            status = (
+                VerificationStatus.SUPPORTED if "SUPPORT" in status_val
+                else VerificationStatus.REFUTED if "CONTRADICT" in status_val or "REFUT" in status_val
+                else VerificationStatus.UNCERTAIN
+            )
             results.append(ClaimVerification(
                 claim=claim.text,
-                status=VerificationStatus(prediction.label),
+                status=status,
                 evidence_titles=titles,
                 evidence_score=prediction.confidence,
                 method="local SciFact checkpoint",
