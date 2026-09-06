@@ -60,14 +60,23 @@ export function PageHeader({
   );
 }
 
-const resultStyles: Record<VerificationResult, { label: string; className: string }> = {
+const resultStyles: Record<string, { label: string; className: string }> = {
   supported: { label: "Supported", className: "bg-success-soft text-success" },
   refuted: { label: "Refuted", className: "bg-danger-soft text-destructive" },
+  contradicted: { label: "Refuted", className: "bg-danger-soft text-destructive" },
   "not-enough-info": { label: "Not Enough Info", className: "bg-warning-soft text-warning" },
+  "not enough info": { label: "Not Enough Info", className: "bg-warning-soft text-warning" },
+  uncertain: { label: "Uncertain", className: "bg-warning-soft text-warning" },
+  unverified: { label: "Unverified", className: "bg-muted text-muted-foreground" },
+  neutral: { label: "Neutral", className: "bg-muted text-muted-foreground" },
 };
 
-export function ResultBadge({ result, className }: { result: VerificationResult; className?: string }) {
-  const style = resultStyles[result];
+export function ResultBadge({ result, className }: { result?: string | VerificationResult; className?: string }) {
+  const key = (result || "unverified").toString().toLowerCase().trim();
+  const style = resultStyles[key] || {
+    label: key ? key.charAt(0).toUpperCase() + key.slice(1).replace(/[-_]/g, " ") : "Unverified",
+    className: "bg-muted text-muted-foreground",
+  };
   return (
     <span
       className={cn(

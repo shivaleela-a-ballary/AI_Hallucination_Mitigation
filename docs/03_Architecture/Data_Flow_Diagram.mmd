@@ -1,0 +1,32 @@
+flowchart LR
+    subgraph DFD_Level_0["Level 0: External Boundaries"]
+        User(["User / External Application"])
+        System[["AI Hallucination Mitigation System"]]
+        ExtAPIs[("External Knowledge Bases<br/>(Wikipedia, arXiv, Semantic Scholar)")]
+        DBStore[("Database / Memory Storage")]
+
+        User -->|Query / Claim / Document| System
+        System -->|Verified Answer, Graph, Citations| User
+        System <-->|HTTP REST Queries| ExtAPIs
+        System <-->|CRUD Operations| DBStore
+    end
+
+    subgraph DFD_Level_1["Level 1: Internal Process Decomposition"]
+        direction TB
+        P1["1.0 Request Ingestion & Parsing"]
+        P2["2.0 Claim Extraction & Decomposition"]
+        P3["3.0 Hybrid Retrieval (BM25 + Dense)"]
+        P4["4.0 Reranking (Cross-Encoder & RRF)"]
+        P5["5.0 Multi-Expert Stance Inference"]
+        P6["6.0 Score Fusion & Verdict Logic"]
+        P7["7.0 Knowledge Graph Generation"]
+        P8["8.0 Response Serialization & Persistence"]
+
+        P1 --> P2
+        P2 --> P3
+        P3 --> P4
+        P4 --> P5
+        P5 --> P6
+        P6 --> P7
+        P7 --> P8
+    end
