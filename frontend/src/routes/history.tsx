@@ -115,9 +115,16 @@ function HistoryPage() {
   const filtered = useMemo(
     () =>
       verifications.filter(
-        (v) =>
-          v.text.toLowerCase().includes(query.toLowerCase()) &&
-          (filter === "all" || v.result === filter),
+        (v) => {
+          const matchesQuery = v.text.toLowerCase().includes(query.toLowerCase());
+          if (!matchesQuery) return false;
+          if (filter === "all") return true;
+          const res = (v.result || "").toLowerCase();
+          if (filter === "not-enough-info") {
+            return res === "not-enough-info" || res === "uncertain" || res === "unverified";
+          }
+          return res.includes(filter);
+        },
       ),
     [verifications, query, filter],
   );
@@ -178,6 +185,8 @@ function HistoryPage() {
               <SelectItem value="supported">Supported</SelectItem>
               <SelectItem value="refuted">Refuted</SelectItem>
               <SelectItem value="not-enough-info">Not Enough Info</SelectItem>
+              <SelectItem value="uncertain">Uncertain</SelectItem>
+              <SelectItem value="unverified">Unverified</SelectItem>
             </SelectContent>
           </Select>
           <Button

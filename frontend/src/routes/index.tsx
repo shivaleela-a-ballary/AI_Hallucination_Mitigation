@@ -83,7 +83,20 @@ function Dashboard() {
   useEffect(() => {
     api.history().then(({ history }) => setVerifications(history.map(mapHistoryRecord))).catch(() => { setVerifications([]); setHistoryError("Unable to load project history."); }).finally(() => setLoading(false));
   }, []);
-  const counts = verifications.reduce((summary, item) => { summary[item.result] += 1; return summary; }, { supported: 0, refuted: 0, "not-enough-info": 0 } as Record<string, number>);
+  const counts = verifications.reduce(
+    (summary, item) => {
+      const res = (item.result || "uncertain").toLowerCase();
+      if (res.includes("support")) {
+        summary.supported = (summary.supported || 0) + 1;
+      } else if (res.includes("refut") || res.includes("contradict")) {
+        summary.refuted = (summary.refuted || 0) + 1;
+      } else {
+        summary["not-enough-info"] = (summary["not-enough-info"] || 0) + 1;
+      }
+      return summary;
+    },
+    { supported: 0, refuted: 0, "not-enough-info": 0 } as Record<string, number>,
+  );
   const statCards = [
     { value: verifications.length, label: "Total Verifications", icon: MessagesSquare, tone: "bg-accent text-primary" },
     { value: counts.supported, label: "Supported", icon: CheckCircle2, tone: "bg-success-soft text-success" },

@@ -117,7 +117,9 @@ function AnswerDetails() {
           {record.claims.length ? <div className="flex flex-col gap-3">
             {record.claims.map((claim) => <div key={claim.claim} className="rounded-xl border border-border p-4">
               <div className="flex flex-wrap items-center justify-between gap-2"><p className="text-sm font-medium">{claim.claim}</p><ResultBadge result={claimStatus(claim)} /></div>
-              <p className="mt-2 text-xs text-muted-foreground">{claim.method} · Evidence confidence {(claim.evidence_score * 100).toFixed(1)}%</p>
+              <p className="mt-2 text-xs text-muted-foreground">
+                {claim.method ? `${claim.method} · ` : ""}Evidence confidence {((claim.evidence_score ?? 0) * 100).toFixed(1)}%
+              </p>
             </div>)}
           </div> : <p className="text-sm text-muted-foreground">No claims were verified for this answer.</p>}
         </SectionCard>
