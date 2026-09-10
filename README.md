@@ -18,7 +18,7 @@ An enterprise-grade, evidence-grounded verification framework that deconstructs 
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.0+-3178C6.svg?style=for-the-badge&logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
 [![TanStack Start](https://img.shields.io/badge/TanStack-Start-FF4154.svg?style=for-the-badge)](https://tanstack.com/start)
 [![Tailwind CSS v4](https://img.shields.io/badge/Tailwind_CSS-v4.2-38B2AC.svg?style=for-the-badge&logo=tailwind-css&logoColor=white)](https://tailwindcss.com/)
-[![Tests](https://img.shields.io/badge/Tests-57%20Passed-brightgreen.svg?style=for-the-badge)](#12-real-results)
+[![Tests](https://img.shields.io/badge/Tests-57%20Passed-brightgreen.svg?style=for-the-badge)](#11-real-results)
 
 <br/>
 
@@ -28,7 +28,7 @@ An enterprise-grade, evidence-grounded verification framework that deconstructs 
 
 ---
 
-## 2. Why AI Hallucination Matters
+## 1. Why AI Hallucination Matters
 
 Generative language models generate statistically probable sequences of tokens. While this results in grammatically articulate and persuasive prose, it creates a fundamental vulnerability: **AI Hallucination**—the authoritative generation of factually incorrect, unverified, or contradictory assertions.
 
@@ -49,7 +49,7 @@ Generative language models generate statistically probable sequences of tokens. 
 
 ---
 
-## 3. Our Approach: Verification Methodology
+## 2. Our Approach: Verification Methodology
 
 Our pipeline enforces a strict separation between text generation and empirical verification.
 
@@ -107,7 +107,7 @@ The system explicitly decouples and quantifies five dimensions of reliability:
 
 ---
 
-## 4. Inside the Verification Workspace
+## 3. Inside the Verification Workspace
 
 The verification workspace provides dedicated tools for each analytical step.
 
@@ -145,7 +145,7 @@ The verification workspace provides dedicated tools for each analytical step.
 
 ---
 
-## 5. Hallucination Forensics Engine
+## 4. Hallucination Forensics Engine
 
 When an assertion is flagged as unverified, refuted, or uncertain, the **Hallucination Forensics Engine** ([`backend/verification/forensics.py`](backend/verification/forensics.py)) explains *why* the claim failed peer-reviewed scrutiny.
 
@@ -177,7 +177,7 @@ flowchart TD
 
 ---
 
-## 6. Claim Risk & Reliability Analysis
+## 5. Claim Risk & Reliability Analysis
 
 Claim-level risk is computed through an empirical multi-factor formula implemented in [`backend/verification/risk_analyzer.py`](backend/verification/risk_analyzer.py). The system does not rely on subjective heuristics; every metric is derived from model confidence, stance counts, and source authorities.
 
@@ -210,7 +210,7 @@ Where:
 
 ---
 
-## 7. Verified Correction Engine
+## 6. Verified Correction Engine
 
 A critical challenge in mitigation systems is **correction hallucination**—where an automated system attempts to fix an error by inventing a different, equally unsupported assertion.
 
@@ -237,7 +237,7 @@ To prevent this, our **Verified Correction Engine** ([`backend/verification/corr
 
 ---
 
-## 8. Research Paper Auditor
+## 7. Research Paper Auditor
 
 The **Research Paper Auditor** ([`backend/api/routes/paper_auditor.py`](backend/api/routes/paper_auditor.py)) performs automated claim auditing of scientific manuscripts (PDF, TXT, MD).
 
@@ -265,7 +265,7 @@ graph LR
 
 ---
 
-## 9. Trusted Knowledge Sources
+## 8. Trusted Knowledge Sources
 
 The retrieval layer incorporates multi-source aggregation managed by the `MultiSourceEvidenceManager` ([`backend/retrieval/providers/manager.py`](backend/retrieval/providers/manager.py)):
 
@@ -281,7 +281,7 @@ The retrieval layer incorporates multi-source aggregation managed by the `MultiS
 
 ---
 
-## 10. Technology Stack
+## 9. Technology Stack
 
 Built strictly upon the dependencies verified in [`backend/requirements.txt`](backend/requirements.txt) and [`frontend/package.json`](frontend/package.json):
 
@@ -309,7 +309,7 @@ Built strictly upon the dependencies verified in [`backend/requirements.txt`](ba
 
 ---
 
-## 11. How the System Works
+## 10. How the System Works
 
 The following architecture diagram represents the complete data flow and execution path implemented across the backend and frontend:
 
@@ -360,7 +360,7 @@ sequenceDiagram
 
 ---
 
-## 12. Real Results
+## 11. Real Results
 
 Every component of this system has been verified through automated test suites and production builds.
 
@@ -405,7 +405,7 @@ backend/tests/test_uploads_api.py ................. PASSED                [100%]
 
 ---
 
-## 13. Getting Started
+## 12. Getting Started
 
 Follow these step-by-step instructions to clone, configure, and run the system locally on **Windows** (PowerShell).
 
@@ -483,7 +483,7 @@ $env:PYTHONPATH='backend'
 
 ---
 
-## 14. API Overview
+## 13. API Overview
 
 The FastAPI backend exposes structured endpoints organized into dedicated routers:
 
@@ -533,7 +533,7 @@ The FastAPI backend exposes structured endpoints organized into dedicated router
 
 ---
 
-## 15. Research & Technical Contribution
+## 14. Research & Technical Contribution
 
 This project addresses key research gaps in Retrieval-Augmented Generation (RAG) and LLM alignment:
 
@@ -545,7 +545,7 @@ This project addresses key research gaps in Retrieval-Augmented Generation (RAG)
 
 ---
 
-## 16. Responsible AI & Epistemic Boundaries
+## 15. Responsible AI & Epistemic Boundaries
 
 - **Evidence-First Primacy**: Automated models must never override peer-reviewed consensus with unverified assertions.
 - **Exposure of Scientific Disagreement**: When literature is heterogeneous or non-definitive, the system presents conflicting viewpoints with equal transparency.
@@ -554,7 +554,7 @@ This project addresses key research gaps in Retrieval-Augmented Generation (RAG)
 
 ---
 
-## 17. Future Scope
+## 16. Future Scope
 
 While the current system achieves 100% test passage across baseline scenarios, future research directions include:
 
@@ -565,7 +565,7 @@ While the current system achieves 100% test passage across baseline scenarios, f
 
 ---
 
-## 18. License & References
+## 17. License & References
 
 ### License
 This project is licensed under the **MIT License** — see the [LICENSE](LICENSE) file for details.
