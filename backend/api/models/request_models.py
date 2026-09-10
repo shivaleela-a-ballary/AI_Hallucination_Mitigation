@@ -1,3 +1,4 @@
+from typing import Optional
 from pydantic import BaseModel, Field
 
 
@@ -35,3 +36,6 @@ class CheckAnswerRequest(BaseModel):
         max_length=5000,
         description="AI generated answer text to decompose and verify claim-by-claim."
     )
+    document_id: Optional[str] = None
+    document_content: Optional[str] = None
+

@@ -6,6 +6,13 @@ import os
 from pathlib import Path
 from dotenv import load_dotenv
 
+# Inject native OS certificates into SSL (resolves Windows certificate verification issues)
+try:
+    import truststore
+    truststore.inject_into_ssl()
+except Exception:
+    pass
+
 # Load this project's backend/.env regardless of the launch directory.
 load_dotenv(Path(__file__).resolve().parents[1] / ".env")
 

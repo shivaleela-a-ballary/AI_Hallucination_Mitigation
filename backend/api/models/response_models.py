@@ -124,9 +124,13 @@ class CheckAnswerClaim(BaseModel):
     verification_status: str
     confidence_score: float
     hallucination_risk: str
+    risk_score: int = 25
     evidence_count: int
     supporting_evidence: List[Source] = Field(default_factory=list)
     contradicting_evidence: List[Source] = Field(default_factory=list)
+    evidence_sources: List[dict] = Field(default_factory=list)
+    forensics: Optional[dict] = None
+    correction: Optional[dict] = None
     explanation: str = ""
 
 
@@ -142,4 +146,8 @@ class CheckAnswerResponse(BaseModel):
     uncertain_claims_count: int
     unverified_claims_count: int = 0
     claims: List[CheckAnswerClaim] = Field(default_factory=list)
+    corrected_answer: Optional[str] = None
+    before_after: Optional[dict] = None
+    evidence_quality_metrics: Optional[dict] = None
     summary: str
+

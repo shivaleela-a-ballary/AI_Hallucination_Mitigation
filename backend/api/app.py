@@ -15,6 +15,7 @@ from api.routes.history import router as history_router
 from api.routes.verify import router as verify_router
 from api.routes.check_answer import router as check_answer_router
 from api.routes.uploads import router as uploads_router
+from api.routes.paper_auditor import router as paper_auditor_router
 
 from api.config import settings
 from api.db.mongodb import db_manager
@@ -59,6 +60,7 @@ app.include_router(history_router, prefix="/api")
 app.include_router(verify_router, prefix="/api")
 app.include_router(check_answer_router, prefix="/api")
 app.include_router(uploads_router, prefix="/api")
+app.include_router(paper_auditor_router, prefix="/api")
 
 
 @app.get("/")
