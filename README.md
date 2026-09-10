@@ -28,29 +28,6 @@ An enterprise-grade, evidence-grounded verification framework that deconstructs 
 
 ---
 
-## 📑 Table of Contents
-
-- [1. Hero Section](#-ai-hallucination-mitigation-system)
-- [2. Why AI Hallucination Matters](#2-why-ai-hallucination-matters)
-- [3. Our Approach: Verification Methodology](#3-our-approach-verification-methodology)
-- [4. Inside the Verification Workspace](#4-inside-the-verification-workspace)
-- [5. Hallucination Forensics Engine](#5-hallucination-forensics-engine)
-- [6. Claim Risk & Reliability Analysis](#6-claim-risk--reliability-analysis)
-- [7. Verified Correction Engine](#7-verified-correction-engine)
-- [8. Research Paper Auditor](#8-research-paper-auditor)
-- [9. Trusted Knowledge Sources](#9-trusted-knowledge-sources)
-- [10. Technology Stack](#10-technology-stack)
-- [11. How the System Works (Architecture)](#11-how-the-system-works)
-- [12. Real Results & Verification Status](#12-real-results)
-- [13. Getting Started (Setup Guide)](#13-getting-started)
-- [14. API Overview](#14-api-overview)
-- [15. Research & Technical Contribution](#15-research--technical-contribution)
-- [16. Responsible AI & Epistemic Boundaries](#16-responsible-ai)
-- [17. Future Scope](#17-future-scope)
-- [18. License & Scientific References](#18-license--references)
-
----
-
 ## 2. Why AI Hallucination Matters
 
 Generative language models generate statistically probable sequences of tokens. While this results in grammatically articulate and persuasive prose, it creates a fundamental vulnerability: **AI Hallucination**—the authoritative generation of factually incorrect, unverified, or contradictory assertions.
