@@ -1,0 +1,39 @@
+flowchart TD
+    subgraph Phase_1["Phase 1: Input Ingestion & Atomic Decomposition"]
+        RawInput["Raw Text / Query / LLM Answer"] --> Preprocessor["Text Cleaner & Normalizer"]
+        Preprocessor --> ClaimSplitter["Atomic Claim Decomposition"]
+        ClaimSplitter --> Claims["List of Atomic Claims [c_1, c_2, ... c_n]"]
+    end
+
+    subgraph Phase_2["Phase 2: Hybrid Multi-Source Retrieval"]
+        Claims --> QueryGen["Search Query Generator"]
+        QueryGen --> SparseRetriever["BM25 Lexical Retriever"]
+        QueryGen --> DenseRetriever["Dense Embeddings (all-MiniLM-L6-v2)"]
+        QueryGen --> ExternalAPIs["External APIs (Wikipedia, arXiv, Semantic Scholar)"]
+        
+        SparseRetriever --> Fusion["Reciprocal Rank Fusion (RRF)"]
+        DenseRetriever --> Fusion
+        ExternalAPIs --> Fusion
+
+        Fusion --> Reranker["Cross-Encoder Passage Reranker"]
+        Reranker --> TopEvidence["Top-K Grounding Evidence Passages [e_1, e_2, ... e_k]"]
+    end
+
+    subgraph Phase_3["Phase 3: Multi-Expert Verification & Stance Detection"]
+        Claims & TopEvidence --> Expert1["Cross-Encoder DeBERTa-v3 NLI<br/>(Entailment, Contradiction, Neutral)"]
+        Claims & TopEvidence --> Expert2["Semantic Cosine Similarity<br/>(Vector Space Alignment)"]
+        Claims & TopEvidence --> Expert3["GPT-2 Token Uncertainty<br/>(Perplexity & Min-Probability)"]
+        Claims & TopEvidence --> Expert4["Rule-Based Contradiction Detector<br/>(Numerical, Negation, Temporal)"]
+
+        Expert1 & Expert2 & Expert3 & Expert4 --> Calibrator["Uncertainty & Weight Calibrator"]
+    end
+
+    subgraph Phase_4["Phase 4: Decision, Knowledge Graph & Mitigation"]
+        Calibrator --> VerdictCalc{"Verdict Decision Engine"}
+        VerdictCalc -->|Entailment >= 0.70| Supported["Verdict: SUPPORTED<br/>(Low Hallucination Risk)"]
+        VerdictCalc -->|Contradiction >= 0.50| Refuted["Verdict: REFUTED / HALLUCINATED<br/>(High Hallucination Risk)"]
+        VerdictCalc -->|Evidence Insufficient| Uncertain["Verdict: UNCERTAIN / ABSTAIN<br/>(Medium Risk / Not Enough Info)"]
+
+        Supported & Refuted & Uncertain --> KG["Knowledge Graph Triples Construction"]
+        KG --> Output["Structured JSON Result with Citations & Visual Nodes"]
+    end

@@ -1,0 +1,101 @@
+classDiagram
+    class AppShell {
+        +renderSidebar()
+        +renderHeader()
+        +renderPageContent()
+    }
+    class VerificationRoute {
+        +handleSubmitClaim()
+        +renderVerdictBadge()
+        +renderConfidenceBar()
+    }
+    class AskRoute {
+        +handleAskQuery()
+        +renderCitations()
+        +renderGroundingStatus()
+    }
+    class CheckAnswerRoute {
+        +handleAuditAnswer()
+        +renderClaimDecomposition()
+        +renderRiskScore()
+    }
+    class KnowledgeGraphView {
+        +renderNodes()
+        +renderEdges()
+        +handleNodeClick()
+    }
+
+    class FastAPIApp {
+        +lifespan()
+        +include_routers()
+        +cors_middleware()
+    }
+    class VerifyRouter {
+        +verify_claim(ClaimRequest)
+        +verify_batch(BatchRequest)
+    }
+    class CheckAnswerRouter {
+        +check_answer(AnswerRequest)
+    }
+    class AskRouter {
+        +ask_grounded(QueryRequest)
+    }
+    class UploadRouter {
+        +upload_file(File)
+        +search_documents(Query)
+    }
+
+    class HybridRetriever {
+        +search_wikipedia(query)
+        +search_arxiv(query)
+        +search_semantic_scholar(query)
+        +search_local(query)
+        +reciprocal_rank_fusion()
+    }
+    class CrossEncoderVerifier {
+        +predict_stance(claim, evidence)
+        +get_entailment_score()
+    }
+    class TokenProbabilityEstimator {
+        +compute_perplexity(text)
+        +compute_token_entropy(text)
+    }
+    class SemanticSimilarityVerifier {
+        +compute_similarity(text1, text2)
+    }
+    class ContradictionDetector {
+        +check_numerical_contradiction()
+        +check_negation_inversion()
+    }
+    class EnsembleVerifier {
+        +evaluate(claim, evidence, methods)
+        +fuse_scores()
+    }
+
+    class DatabaseManager {
+        +save_verification()
+        +get_history()
+        +save_document()
+        +delete_record()
+    }
+
+    VerificationRoute --> VerifyRouter
+    AskRoute --> AskRouter
+    CheckAnswerRoute --> CheckAnswerRouter
+    KnowledgeGraphView --> VerifyRouter
+
+    VerifyRouter --> EnsembleVerifier
+    CheckAnswerRouter --> HybridRetriever
+    CheckAnswerRouter --> EnsembleVerifier
+    AskRouter --> HybridRetriever
+    AskRouter --> EnsembleVerifier
+
+    EnsembleVerifier --> CrossEncoderVerifier
+    EnsembleVerifier --> TokenProbabilityEstimator
+    EnsembleVerifier --> SemanticSimilarityVerifier
+    EnsembleVerifier --> ContradictionDetector
+
+    VerifyRouter --> DatabaseManager
+    CheckAnswerRouter --> DatabaseManager
+    AskRouter --> DatabaseManager
+    UploadRouter --> DatabaseManager

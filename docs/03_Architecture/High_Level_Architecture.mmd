@@ -1,0 +1,61 @@
+flowchart TB
+    subgraph Client["Client Application (Browser)"]
+        UI["React 19 + TypeScript SPA"]
+        Router["TanStack Router & Query"]
+        GraphVis["React Flow Knowledge Graph"]
+    end
+
+    subgraph API_Gateway["FastAPI Gateway (Port 8000)"]
+        Router_Verify["/api/verify (Stance Detection)"]
+        Router_Check["/api/check-answer (Fact Checking)"]
+        Router_Ask["/api/ask (Grounded RAG)"]
+        Router_Upload["/api/upload (Corpus Manager)"]
+        Router_History["/api/history (Audit Log)"]
+    end
+
+    subgraph Core_Pipeline["Core Verification & Grounding Engine"]
+        ClaimExtractor["Claim Decomposition Engine"]
+        Retriever["Hybrid Multi-Source Retriever<br/>(Wikipedia, arXiv, Semantic Scholar)"]
+        Reranker["Cross-Encoder Reranker & RRF"]
+        Ensemble["Multi-Method Ensemble Evaluator"]
+        KGExtractor["Knowledge Graph Triples Extractor"]
+    end
+
+    subgraph AI_Models["Neural Models & AI Inference"]
+        DeBERTa["cross-encoder/nli-deberta-v3-small (NLI)"]
+        MiniLM["sentence-transformers/all-MiniLM-L6-v2 (Embeddings)"]
+        GPT2["gpt2 (Token Logits & Uncertainty)"]
+        RuleEngine["Contradiction & Negation Engine"]
+    end
+
+    subgraph Persistence["Storage & Caching Layer"]
+        DB["MongoDB Atlas (Cloud Cluster)"]
+        MemoryStore["Thread-Safe In-Memory Fallback"]
+        FAISS["Local Vector Index & BM25 Cache"]
+    end
+
+    UI --> Router
+    Router --> API_Gateway
+    GraphVis -.-> UI
+
+    Router_Verify --> Ensemble
+    Router_Check --> ClaimExtractor
+    ClaimExtractor --> Retriever
+    Router_Ask --> Retriever
+
+    Retriever --> Reranker
+    Reranker --> Ensemble
+
+    Ensemble --> DeBERTa
+    Ensemble --> MiniLM
+    Ensemble --> GPT2
+    Ensemble --> RuleEngine
+
+    Ensemble --> KGExtractor
+    KGExtractor --> GraphVis
+
+    Router_Upload --> MiniLM
+    MiniLM --> FAISS
+
+    API_Gateway --> DB
+    DB -.->|Fallback if URI Unset| MemoryStore

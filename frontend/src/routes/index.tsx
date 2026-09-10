@@ -64,7 +64,6 @@ function DashboardPage() {
     }
     void loadData();
   }, []);
-
   const totalVerifications = stats?.total_verifications ?? recentRecords.length;
   const totalClaims = stats?.total_claims ?? 0;
   const hallucinationRate = stats?.hallucination_rate ?? 0;

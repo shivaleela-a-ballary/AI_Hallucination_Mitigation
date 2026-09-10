@@ -1,0 +1,44 @@
+sequenceDiagram
+    autonumber
+    actor User
+    participant Frontend as React 19 Frontend (TanStack)
+    participant Gateway as FastAPI Router (/api/verify)
+    participant Retriever as Hybrid Multi-Source Retriever
+    participant Ensemble as Ensemble Verification Engine
+    participant DeBERTa as DeBERTa-v3 NLI Model
+    participant Embeddings as all-MiniLM-L6-v2 Embedder
+    participant KG as KG Triples Extractor
+    participant DB as MongoDB Atlas / In-Memory Store
+
+    User->>Frontend: Enter Claim ("The Earth orbits the Sun")
+    Frontend->>Gateway: POST /api/verify { claim, methods: ["cross_encoder", "semantic_similarity"] }
+    
+    alt Evidence not provided
+        Gateway->>Retriever: retrieve_evidence(query="The Earth orbits the Sun")
+        Retriever->>Retriever: Query Wikipedia / arXiv / Local DB
+        Retriever->>Retriever: Reciprocal Rank Fusion & Cross-Encoder Reranking
+        Retriever-->>Gateway: Return Top-K Evidence Passages
+    end
+
+    Gateway->>Ensemble: evaluate(claim, evidence, methods)
+    
+    par Parallel Stance & Uncertainty Evaluation
+        Ensemble->>DeBERTa: predict_stance(claim, evidence)
+        DeBERTa-->>Ensemble: Entailment: 0.96, Contradiction: 0.01, Neutral: 0.03
+    and
+        Ensemble->>Embeddings: compute_similarity(claim, evidence)
+        Embeddings-->>Ensemble: Cosine Similarity: 0.89
+    end
+
+    Ensemble->>Ensemble: Fuse Stance Probabilities & Calibrate Confidence
+    Ensemble-->>Gateway: Verdict: SUPPORTED, Confidence: 0.94, Hallucinated: False
+
+    Gateway->>KG: extract_knowledge_graph(claim, evidence)
+    KG-->>Gateway: Nodes: ["Earth", "Sun", "Orbit"], Edges: [...]
+
+    Gateway->>DB: save_verification(record)
+    DB-->>Gateway: Acknowledge (Saved)
+
+    Gateway-->>Frontend: JSON Response { verdict, confidence, is_hallucinated, kg, sources }
+    Frontend->>Frontend: Render VerdictBadge ("Supported"), ConfidenceBar, Citations & React Flow Graph
+    Frontend-->>User: Display Verified Results

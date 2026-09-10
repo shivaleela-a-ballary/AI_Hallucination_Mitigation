@@ -10,6 +10,7 @@ import {
   Filter,
   History as HistoryIcon,
   Loader2,
+  RefreshCw,
   Search,
   ShieldAlert,
   ShieldCheck,
@@ -82,10 +83,24 @@ function HistoryPage() {
     const status = (item.verification_status || "").toUpperCase();
     if (filterStatus === "SUPPORTED" && status !== "SUPPORTED") return false;
     if (filterStatus === "REFUTED" && status !== "REFUTED") return false;
-    if (filterStatus === "UNCERTAIN" && !status.includes("UNCERTAIN") && status !== "PARTIALLY_VERIFIED") return false;
+    if (
+      filterStatus === "UNCERTAIN" &&
+      !status.includes("UNCERTAIN") &&
+      status !== "PARTIALLY_VERIFIED" &&
+      status !== "NOT-ENOUGH-INFO" &&
+      status !== "UNVERIFIED"
+    ) {
+      return false;
+    }
 
-    const queryText = item.query || (item as unknown as { user_query?: string }).user_query || "";
-    if (searchQuery && !queryText.toLowerCase().includes(searchQuery.toLowerCase())) {
+    const queryText = (
+      item.query ||
+      (item as unknown as { user_query?: string }).user_query ||
+      item.answer ||
+      (item as unknown as { response?: string }).response ||
+      ""
+    ).toLowerCase();
+    if (searchQuery && !queryText.includes(searchQuery.toLowerCase())) {
       return false;
     }
     return true;
@@ -146,13 +161,22 @@ function HistoryPage() {
             ))}
           </div>
 
-          <div className="w-full sm:w-72">
+          <div className="w-full sm:w-72 flex items-center gap-2">
             <Input
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Search past queries..."
               className="h-9 rounded-xl bg-[#060c1d] border-[#1c2c54] text-xs text-slate-200 placeholder:text-slate-500"
             />
+            <Button
+              variant="outline"
+              size="icon"
+              aria-label="Refresh history"
+              className="size-9 rounded-xl border-[#1c2c54] text-slate-300 hover:bg-[#121f3f] shrink-0"
+              onClick={() => void loadHistory()}
+            >
+              <RefreshCw className={`size-4 ${loading ? "animate-spin" : ""}`} />
+            </Button>
           </div>
         </div>
 

@@ -1,0 +1,41 @@
+flowchart TD
+    subgraph Client_Device["Client Machine / Browser"]
+        Browser["Modern Web Browser (Chrome, Firefox, Edge)"]
+        SPA["React 19 Application (HTML5 / CSS4 / JS Bundle)"]
+        Browser --- SPA
+    end
+
+    subgraph Host_Server["Host Environment / Cloud Server (Localhost / Docker)"]
+        subgraph Frontend_Server["Frontend Static / Dev Server (Port 8080)"]
+            Vite["Vite 8 Dev Server / NGINX"]
+        end
+
+        subgraph Backend_Process["FastAPI Application Server (Port 8000)"]
+            Uvicorn["Uvicorn ASGI Engine"]
+            FastAPI["FastAPI 0.115+ Application"]
+            Uvicorn --- FastAPI
+        end
+
+        subgraph Local_Cache["Local Cache & Model Weights Store"]
+            HF_Cache["Hugging Face Model Cache (~/.cache/huggingface)"]
+            PyTorch["PyTorch 2.0+ Tensor Engine (CPU/CUDA)"]
+            Local_Index["FAISS / In-Memory Index Store"]
+        end
+    end
+
+    subgraph Cloud_Infrastructure["Cloud & External Services"]
+        MongoDB["MongoDB Atlas Cloud Cluster"]
+        WikiAPI["Wikipedia REST API"]
+        ArxivAPI["arXiv Search API"]
+        ScholarAPI["Semantic Scholar API"]
+    end
+
+    SPA -->|HTTP / WebSocket (Port 8080)| Vite
+    SPA -->|REST API Calls (Port 8000)| Uvicorn
+    FastAPI --> PyTorch
+    PyTorch --> HF_Cache
+    FastAPI --> Local_Index
+    FastAPI -->|Motor Async Driver| MongoDB
+    FastAPI -->|HTTP Requests| WikiAPI
+    FastAPI -->|HTTP Requests| ArxivAPI
+    FastAPI -->|HTTP Requests| ScholarAPI
