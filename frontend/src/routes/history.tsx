@@ -1,67 +1,49 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
-import { useEffect, useMemo, useState } from "react";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { useEffect, useState } from "react";
 import {
-  Eye,
+  AlertCircle,
+  AlertTriangle,
+  ArrowRight,
+  CheckCircle2,
+  Clock,
+  ExternalLink,
   Filter,
-  MessageCircleQuestion,
+  History as HistoryIcon,
+  Loader2,
   Search,
+  ShieldAlert,
   ShieldCheck,
   Trash2,
-  RefreshCw,
-  Database,
+  XCircle,
 } from "lucide-react";
 
 import { AppShell } from "@/components/app/app-shell";
-import { PageHeader, ResultBadge } from "@/components/app/ui-kit";
-import { Input } from "@/components/ui/input";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
-import { api, type Verification } from "@/lib/api";
-import { mapHistoryRecord } from "@/lib/presentation";
-import { useAuth } from "@/lib/auth-context";
+import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
+import { api, type AnswerRecord } from "@/lib/api";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/history")({
-  head: () => ({
-    meta: [
-      { title: "Verification History — AI Hallucination Mitigation System" },
-      {
-        name: "description",
-        content: "Track and review all your past claim verifications and questions with confidence scores.",
-      },
-      { property: "og:title", content: "Verification History — AI Hallucination Mitigation System" },
-      { property: "og:description", content: "Review past verifications and confidence scores." },
-    ],
-  }),
   component: HistoryPage,
 });
 
-const PAGE_SIZE = 6;
-
 function HistoryPage() {
-  const { isAuthenticated } = useAuth();
-  const [query, setQuery] = useState("");
-  const [filter, setFilter] = useState("all");
-  const [page, setPage] = useState(1);
-  const [verifications, setVerifications] = useState<Verification[]>([]);
+  const navigate = useNavigate();
+  const [historyItems, setHistoryItems] = useState<AnswerRecord[]>([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
+  const [filterStatus, setFilterStatus] = useState<string>("All");
+  const [searchQuery, setSearchQuery] = useState("");
   const [deletingId, setDeletingId] = useState<string | null>(null);
 
   const loadHistory = async () => {
     try {
-      setError("");
       setLoading(true);
-      const { history } = await api.history();
-      setVerifications(history.map(mapHistoryRecord));
-    } catch (cause) {
-      setError(cause instanceof Error ? cause.message : "Unable to load history.");
+      const res = await api.history();
+      setHistoryItems(res.history || []);
+    } catch (err: unknown) {
+      toast.error("Failed to load verification history.");
+      setHistoryItems([]);
     } finally {
       setLoading(false);
     }
@@ -71,254 +53,213 @@ function HistoryPage() {
     void loadHistory();
   }, []);
 
-  const handleDeleteItem = async (id: string, text: string) => {
-    if (!confirm(`Delete verification record for "${text.slice(0, 40)}..."?`)) return;
-    setDeletingId(id);
+  const handleDelete = async (id: string, e: React.MouseEvent) => {
+    e.stopPropagation();
     try {
-      try {
-        if (isAuthenticated) {
-          await api.user.deleteHistoryItem(id);
-        } else {
-          await api.deleteHistoryItem(id);
-        }
-      } catch {
-        await api.deleteHistoryItem(id);
-      }
-      setVerifications((prev) => prev.filter((item) => item.id !== id));
-      toast.success("Record deleted successfully.");
-    } catch (cause) {
-      toast.error(cause instanceof Error ? cause.message : "Failed to delete record.");
+      setDeletingId(id);
+      await api.deleteHistoryItem(id);
+      setHistoryItems((prev) => prev.filter((item) => item.id !== id));
+      toast.success("Record deleted.");
+    } catch {
+      toast.error("Failed to delete record.");
     } finally {
       setDeletingId(null);
     }
   };
 
   const handleClearAll = async () => {
-    if (!confirm("Are you sure you want to clear your verification history? This cannot be undone.")) return;
+    if (!confirm("Are you sure you want to clear all verification history?")) return;
     try {
-      try {
-        if (isAuthenticated) {
-          await api.user.clearHistory();
-        } else {
-          await api.clearHistory();
-        }
-      } catch {
-        await api.clearHistory();
-      }
-      setVerifications([]);
-      toast.success("Verification history cleared successfully.");
-    } catch (cause) {
-      toast.error(cause instanceof Error ? cause.message : "Failed to clear history.");
+      await api.clearHistory();
+      setHistoryItems([]);
+      toast.success("All verification history cleared.");
+    } catch {
+      toast.error("Failed to clear history.");
     }
   };
 
-  const filtered = useMemo(
-    () =>
-      verifications.filter(
-        (v) =>
-          v.text.toLowerCase().includes(query.toLowerCase()) &&
-          (filter === "all" || v.result === filter),
-      ),
-    [verifications, query, filter],
-  );
+  const filteredItems = historyItems.filter((item) => {
+    const status = (item.verification_status || "").toUpperCase();
+    if (filterStatus === "SUPPORTED" && status !== "SUPPORTED") return false;
+    if (filterStatus === "REFUTED" && status !== "REFUTED") return false;
+    if (filterStatus === "UNCERTAIN" && !status.includes("UNCERTAIN") && status !== "PARTIALLY_VERIFIED") return false;
 
-  const pages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
-  const current = Math.min(page, pages);
-  const rows = filtered.slice((current - 1) * PAGE_SIZE, current * PAGE_SIZE);
+    const queryText = item.query || (item as unknown as { user_query?: string }).user_query || "";
+    if (searchQuery && !queryText.toLowerCase().includes(searchQuery.toLowerCase())) {
+      return false;
+    }
+    return true;
+  });
 
   return (
     <AppShell>
-      <PageHeader
-        title="Verification History"
-        description="Review all past claim verifications, evidence citations, and confidence scores synced to MongoDB."
-        action={
-          verifications.length > 0 ? (
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => void handleClearAll()}
-              className="rounded-xl text-destructive hover:bg-destructive/10 hover:text-destructive"
-            >
-              <Trash2 className="size-4 mr-1.5" /> Clear All History
-            </Button>
-          ) : undefined
-        }
-      />
+      <div className="space-y-7 max-w-6xl mx-auto">
+        {/* Header */}
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-[#162340] pb-5">
+          <div className="space-y-1">
+            <div className="flex items-center gap-2">
+              <div className="size-8 rounded-lg bg-indigo-500/10 border border-indigo-500/30 flex items-center justify-center text-indigo-400">
+                <HistoryIcon className="size-4.5" />
+              </div>
+              <h1 className="text-2xl font-extrabold text-white tracking-tight">
+                Verification History
+              </h1>
+            </div>
+            <p className="text-xs sm:text-sm text-slate-400">
+              Audit trail of previous factual inquiries, claim deconstructions, and scientific verifications.
+            </p>
+          </div>
 
-      <div className="card-soft p-5">
-        <div className="grid gap-3 sm:grid-cols-[minmax(0,1fr)_auto_auto]">
-          <div className="relative min-w-0">
-            <Search
-              className="absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground"
-              aria-hidden="true"
-            />
+          <div className="flex items-center gap-2">
+            {historyItems.length > 0 && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleClearAll}
+                className="rounded-xl border-rose-500/30 text-rose-400 hover:bg-rose-500/10 text-xs"
+              >
+                <Trash2 className="size-3.5 mr-1.5" /> Clear All History
+              </Button>
+            )}
+          </div>
+        </div>
+
+        {/* Search & Filter Bar */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-[#091124] border border-[#172545] p-4 rounded-2xl">
+          <div className="flex items-center gap-1.5 flex-wrap">
+            <span className="text-xs font-semibold text-slate-400 mr-1 flex items-center gap-1">
+              <Filter className="size-3.5" /> Filter:
+            </span>
+            {["All", "SUPPORTED", "REFUTED", "UNCERTAIN"].map((s) => (
+              <button
+                key={s}
+                type="button"
+                onClick={() => setFilterStatus(s)}
+                className={`text-xs px-3 py-1.5 rounded-xl font-semibold transition-colors ${
+                  filterStatus === s
+                    ? "bg-indigo-600 text-white shadow"
+                    : "text-slate-400 hover:text-slate-200 bg-[#0c1630]"
+                }`}
+              >
+                {s === "All" ? "All Records" : s}
+              </button>
+            ))}
+          </div>
+
+          <div className="w-full sm:w-72">
             <Input
-              value={query}
-              onChange={(e) => {
-                setQuery(e.target.value);
-                setPage(1);
-              }}
-              placeholder="Search history..."
-              aria-label="Search history"
-              className="h-11 rounded-xl pl-9"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="Search past queries..."
+              className="h-9 rounded-xl bg-[#060c1d] border-[#1c2c54] text-xs text-slate-200 placeholder:text-slate-500"
             />
           </div>
-          <Select
-            value={filter}
-            onValueChange={(v) => {
-              setFilter(v);
-              setPage(1);
-            }}
-          >
-            <SelectTrigger className="h-11 w-full rounded-xl sm:w-44">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All Results</SelectItem>
-              <SelectItem value="supported">Supported</SelectItem>
-              <SelectItem value="refuted">Refuted</SelectItem>
-              <SelectItem value="not-enough-info">Not Enough Info</SelectItem>
-            </SelectContent>
-          </Select>
-          <Button
-            variant="outline"
-            size="icon"
-            aria-label="Refresh history"
-            className="size-11 rounded-xl"
-            onClick={() => void loadHistory()}
-          >
-            <RefreshCw className={`size-4 ${loading ? "animate-spin" : ""}`} />
-          </Button>
         </div>
 
-        {loading && <p className="mt-3 text-sm text-muted-foreground">Loading history from MongoDB...</p>}
-        {error && <p role="alert" className="mt-3 text-sm text-destructive">{error}</p>}
+        {/* History List */}
+        {loading ? (
+          <div className="py-16 text-center text-slate-400 text-xs flex flex-col items-center justify-center gap-2">
+            <Loader2 className="size-6 animate-spin text-indigo-400" />
+            <span>Loading verification records...</span>
+          </div>
+        ) : filteredItems.length === 0 ? (
+          <div className="py-16 text-center rounded-2xl border border-dashed border-[#172545] bg-[#091124] text-slate-400 space-y-2">
+            <Clock className="size-8 text-slate-500 mx-auto mb-1" />
+            <p className="text-sm font-semibold text-slate-300">No verification records found.</p>
+            <p className="text-xs text-slate-500">
+              Start by checking an AI answer or asking a question from the dashboard.
+            </p>
+          </div>
+        ) : (
+          <div className="space-y-3">
+            {filteredItems.map((item) => {
+              const status = (item.verification_status || "").toUpperCase();
+              const isSupported = status === "SUPPORTED";
+              const isRefuted = status === "REFUTED";
+              const dateStr = item.created_at ? new Date(item.created_at).toLocaleString() : "Recent";
+              const queryText = item.query || (item as unknown as { user_query?: string }).user_query || "Verification Query";
+              const answerText = item.answer || (item as unknown as { response?: string }).response || "";
+              const sourcesCount = (item.sources || item.evidence || []).length;
+              const conf = Math.round((item.confidence_score ?? (item as unknown as { confidence?: number }).confidence ?? 0) * 100);
 
-        <div className="mt-5 overflow-x-auto">
-          <table className="w-full min-w-[720px] text-left text-sm">
-            <thead>
-              <tr className="text-xs font-semibold text-muted-foreground">
-                <th scope="col" className="pb-3">
-                  Type
-                </th>
-                <th scope="col" className="pb-3">
-                  Claim / Question
-                </th>
-                <th scope="col" className="pb-3">
-                  Result
-                </th>
-                <th scope="col" className="pb-3">
-                  Confidence
-                </th>
-                <th scope="col" className="pb-3">Sources</th>
-                <th scope="col" className="pb-3">
-                  Date
-                </th>
-                <th scope="col" className="pb-3 text-right">
-                  Actions
-                </th>
-              </tr>
-            </thead>
-            <tbody>
-              {rows.map((v) => (
-                <tr key={v.id} className="border-t border-border/70 group">
-                  <td className="py-4 pr-4">
-                    <span className="grid size-9 place-items-center rounded-xl bg-accent text-primary">
-                      {v.type === "claim" ? (
-                        <ShieldCheck className="size-4" aria-hidden="true" />
-                      ) : (
-                        <MessageCircleQuestion className="size-4" aria-hidden="true" />
-                      )}
-                      <span className="sr-only">{v.type}</span>
-                    </span>
-                  </td>
-                  <td className="max-w-[260px] py-4 pr-4 font-medium">
-                    <span className="line-clamp-2">{v.text}</span>
-                  </td>
-                  <td className="py-4 pr-4">
-                    <ResultBadge result={v.result} />
-                  </td>
-                  <td className="py-4 pr-4 tabular-nums">
-                    {v.confidenceAvailable ? `${(v.confidence * 100).toFixed(1)}%` : "Not available"}
-                  </td>
-                  <td className="py-4 pr-4 text-muted-foreground">{v.sourceCount}</td>
-                  <td className="py-4 pr-4 text-muted-foreground">
-                    <span className="block whitespace-nowrap">{v.date}</span>
-                    <span className="block text-xs">{v.time}</span>
-                  </td>
-                  <td className="py-4 text-right">
-                    <div className="flex items-center justify-end gap-1">
-                      <Link
-                        to="/answer/$id"
-                        params={{ id: v.id }}
-                        aria-label={`View details for ${v.text}`}
-                        className="inline-grid size-8 place-items-center rounded-lg text-muted-foreground transition-colors hover:bg-muted hover:text-primary"
+              return (
+                <div
+                  key={item.id}
+                  className="rounded-2xl border border-[#172545] bg-[#091124] p-5 space-y-3 hover:border-indigo-500/40 transition-colors"
+                >
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <Badge
+                        className={
+                          isSupported
+                            ? "bg-emerald-500/20 text-emerald-400 border-emerald-500/40 text-xs font-bold"
+                            : isRefuted
+                            ? "bg-rose-500/20 text-rose-400 border-rose-500/40 text-xs font-bold"
+                            : "bg-amber-500/20 text-amber-400 border-amber-500/40 text-xs font-bold"
+                        }
                       >
-                        <Eye className="size-4" />
-                      </Link>
+                        {status || "VERIFIED"}
+                      </Badge>
+                      <span className="text-xs text-slate-500 flex items-center gap-1">
+                        <Clock className="size-3" /> {dateStr}
+                      </span>
+                    </div>
+
+                    <div className="flex items-center gap-3 text-xs text-slate-400">
+                      {conf > 0 && (
+                        <span>Confidence: <strong className="text-slate-200">{conf}%</strong></span>
+                      )}
+                      <span>Evidence: <strong className="text-slate-200">{sourcesCount} sources</strong></span>
                       <button
                         type="button"
-                        onClick={() => void handleDeleteItem(v.id, v.text)}
-                        disabled={deletingId === v.id}
-                        aria-label="Delete item"
-                        className="inline-grid size-8 place-items-center rounded-lg text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive"
+                        onClick={(e) => handleDelete(item.id, e)}
+                        disabled={deletingId === item.id}
+                        className="text-slate-500 hover:text-rose-400 p-1 transition-colors"
+                        title="Delete record"
                       >
-                        <Trash2 className="size-4" />
+                        <Trash2 className="size-3.5" />
                       </button>
                     </div>
-                  </td>
-                </tr>
-              ))}
-              {rows.length === 0 && !loading && (
-                <tr>
-                  <td colSpan={7} className="py-12 text-center text-muted-foreground">
-                    <div className="flex flex-col items-center justify-center space-y-2">
-                      <Database className="size-8 text-muted-foreground/50" />
-                      <p className="font-medium">No verification records found</p>
-                      <p className="text-xs">Run a claim check in New Verification or ask a question in Chat.</p>
-                    </div>
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
-        </div>
+                  </div>
 
-        {pages > 1 && (
-          <nav aria-label="Pagination" className="mt-6 flex items-center justify-center gap-2">
-            <Button
-              variant="outline"
-              size="icon"
-              className="size-9 rounded-lg"
-              aria-label="Previous page"
-              disabled={current === 1}
-              onClick={() => setPage(current - 1)}
-            >
-              ‹
-            </Button>
-            {Array.from({ length: pages }).map((_, i) => (
-              <Button
-                key={i}
-                variant={current === i + 1 ? "default" : "outline"}
-                size="icon"
-                className="size-9 rounded-lg"
-                aria-current={current === i + 1 ? "page" : undefined}
-                onClick={() => setPage(i + 1)}
-              >
-                {i + 1}
-              </Button>
-            ))}
-            <Button
-              variant="outline"
-              size="icon"
-              className="size-9 rounded-lg"
-              aria-label="Next page"
-              disabled={current === pages}
-              onClick={() => setPage(current + 1)}
-            >
-              ›
-            </Button>
-          </nav>
+                  <div>
+                    <h3 className="text-sm font-bold text-slate-100 leading-snug">
+                      "{queryText}"
+                    </h3>
+                    {answerText && (
+                      <p className="mt-1.5 text-xs text-slate-400 line-clamp-2 leading-relaxed">
+                        {answerText}
+                      </p>
+                    )}
+                  </div>
+
+                  <div className="pt-2 flex items-center justify-between border-t border-[#121c33] text-xs">
+                    <span className="text-slate-500 text-[11px]">
+                      {(item.claims || []).length > 0 ? `${item.claims.length} claim(s) extracted` : "Direct inquiry"}
+                    </span>
+
+                    <div className="flex items-center gap-2">
+                      <Button
+                        onClick={() => navigate({ to: "/before-after" })}
+                        variant="ghost"
+                        size="sm"
+                        className="text-xs text-indigo-400 hover:text-indigo-300"
+                      >
+                        Inspect Before/After <ExternalLink className="size-3 ml-1" />
+                      </Button>
+                      <Link
+                        to="/answer/$id"
+                        params={{ id: item.id }}
+                        className="text-xs font-semibold text-slate-200 hover:text-white bg-[#0f1b38] hover:bg-indigo-600 px-3 py-1 rounded-lg border border-[#1b2f61] transition-colors"
+                      >
+                        View Full Details
+                      </Link>
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
         )}
       </div>
     </AppShell>
