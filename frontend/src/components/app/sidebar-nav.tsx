@@ -3,18 +3,18 @@ import {
   Home,
   MessageSquare,
   History as HistoryIcon,
-  Search,
-  Share2,
-  FileText,
+  FileCheck,
+  ShieldAlert,
+  FileSearch,
+  Scale,
+  Library,
   Settings as SettingsIcon,
   HelpCircle,
   CheckCircle2,
-  Cpu,
   BrainCircuit,
   LogOut,
   LogIn,
-  Sun,
-  Moon,
+  Activity,
 } from "lucide-react";
 import { motion } from "motion/react";
 
@@ -22,16 +22,42 @@ import { cn } from "@/lib/utils";
 import { useTheme } from "@/hooks/use-theme";
 import { useAuth } from "@/lib/auth-context";
 
-export const navItems = [
+export interface NavItemConfig {
+  to: string;
+  label: string;
+  icon: React.ComponentType<{ className?: string }>;
+  badge?: string;
+}
+
+export const primaryNavItems: NavItemConfig[] = [
   { to: "/", label: "Dashboard", icon: Home },
   { to: "/ask", label: "Ask Question", icon: MessageSquare },
   { to: "/history", label: "Verification History", icon: HistoryIcon },
-  { to: "/new-verification", label: "Evidence Search", icon: Search },
-  { to: "/sources", label: "Knowledge Graph", icon: Share2 },
-  { to: "/check-answer", label: "Reports", icon: FileText },
+  { to: "/check-answer", label: "Check AI Answer", icon: FileCheck },
+];
+
+export const analysisNavItems: NavItemConfig[] = [
+  { to: "/forensics", label: "Hallucination Forensics", icon: Activity },
+  { to: "/risk-heatmap", label: "Claim Risk Heatmap", icon: ShieldAlert },
+  { to: "/before-after", label: "Before/After Analysis", icon: Scale },
+  { to: "/research-paper-auditor", label: "Research Paper Auditor", icon: FileSearch },
+];
+
+export const evidenceNavItems: NavItemConfig[] = [
+  { to: "/sources", label: "Sources", icon: Library },
+];
+
+export const utilityNavItems: NavItemConfig[] = [
   { to: "/settings", label: "Settings", icon: SettingsIcon },
   { to: "/about", label: "Help & Docs", icon: HelpCircle },
-] as const;
+];
+
+export const navItems = [
+  ...primaryNavItems,
+  ...analysisNavItems,
+  ...evidenceNavItems,
+  ...utilityNavItems,
+];
 
 export function BrandMark() {
   return (
@@ -60,33 +86,146 @@ export function SidebarNav({ onNavigate }: { onNavigate?: () => void }) {
         <BrandMark />
 
         {/* Navigation Items */}
-        <nav aria-label="Main navigation" className="flex flex-col gap-1.5 pt-2">
-          {navItems.map((item) => {
-            const active = item.to === "/" ? pathname === "/" : pathname.startsWith(item.to);
-            return (
-              <Link
-                key={item.to}
-                to={item.to}
-                onClick={onNavigate}
-                aria-current={active ? "page" : undefined}
-                className={cn(
-                  "group relative flex items-center gap-3.5 rounded-xl px-3.5 py-2.5 text-sm font-medium transition-all duration-200",
-                  active
-                    ? "bg-gradient-to-r from-indigo-600 to-purple-600 text-white shadow-lg shadow-indigo-600/30 border border-indigo-400/40 font-semibold"
-                    : "text-slate-400 hover:text-slate-100 hover:bg-[#111c38] hover:translate-x-0.5",
-                )}
-              >
-                <item.icon
+        <nav aria-label="Main navigation" className="space-y-4 pt-1">
+          {/* Primary Navigation */}
+          <div className="flex flex-col gap-1">
+            {primaryNavItems.map((item) => {
+              const active = item.to === "/" ? pathname === "/" : pathname.startsWith(item.to);
+              const IconComponent = item.icon;
+              return (
+                <Link
+                  key={item.to}
+                  to={item.to}
+                  onClick={onNavigate}
+                  aria-current={active ? "page" : undefined}
                   className={cn(
-                    "size-4.5 shrink-0 transition-colors",
-                    active ? "text-white" : "text-slate-400 group-hover:text-slate-200",
+                    "group relative flex items-center justify-between rounded-xl px-3 py-2 text-sm font-medium transition-all duration-200",
+                    active
+                      ? "bg-gradient-to-r from-indigo-600 to-purple-600 text-white shadow-lg shadow-indigo-600/30 border border-indigo-400/40 font-semibold"
+                      : "text-slate-400 hover:text-slate-100 hover:bg-[#111c38] hover:translate-x-0.5",
                   )}
-                  aria-hidden="true"
-                />
-                <span className="truncate">{item.label}</span>
-              </Link>
-            );
-          })}
+                >
+                  <div className="flex items-center gap-3 min-w-0">
+                    <IconComponent
+                      className={cn(
+                        "size-4 shrink-0 transition-colors",
+                        active ? "text-white" : "text-slate-400 group-hover:text-slate-200",
+                      )}
+                    />
+                    <span className="truncate">{item.label}</span>
+                  </div>
+                </Link>
+              );
+            })}
+          </div>
+
+          {/* Analysis Section */}
+          <div className="space-y-1 pt-1">
+            <div className="px-3 text-[10px] font-bold tracking-widest text-slate-500 uppercase">
+              Analysis
+            </div>
+            <div className="flex flex-col gap-1">
+              {analysisNavItems.map((item) => {
+                const active = pathname.startsWith(item.to);
+                const IconComponent = item.icon;
+                return (
+                  <Link
+                    key={item.to}
+                    to={item.to}
+                    onClick={onNavigate}
+                    aria-current={active ? "page" : undefined}
+                    className={cn(
+                      "group relative flex items-center justify-between rounded-xl px-3 py-2 text-sm font-medium transition-all duration-200",
+                      active
+                        ? "bg-gradient-to-r from-indigo-600 to-purple-600 text-white shadow-lg shadow-indigo-600/30 border border-indigo-400/40 font-semibold"
+                        : "text-slate-400 hover:text-slate-100 hover:bg-[#111c38] hover:translate-x-0.5",
+                    )}
+                  >
+                    <div className="flex items-center gap-3 min-w-0">
+                      <IconComponent
+                        className={cn(
+                          "size-4 shrink-0 transition-colors",
+                          active ? "text-white" : "text-slate-400 group-hover:text-slate-200",
+                        )}
+                      />
+                      <span className="truncate">{item.label}</span>
+                    </div>
+                  </Link>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Evidence Section */}
+          <div className="space-y-1 pt-1">
+            <div className="px-3 text-[10px] font-bold tracking-widest text-slate-500 uppercase">
+              Evidence
+            </div>
+            <div className="flex flex-col gap-1">
+              {evidenceNavItems.map((item) => {
+                const active = pathname.startsWith(item.to);
+                const IconComponent = item.icon;
+                return (
+                  <Link
+                    key={item.to}
+                    to={item.to}
+                    onClick={onNavigate}
+                    aria-current={active ? "page" : undefined}
+                    className={cn(
+                      "group relative flex items-center justify-between rounded-xl px-3 py-2 text-sm font-medium transition-all duration-200",
+                      active
+                        ? "bg-gradient-to-r from-indigo-600 to-purple-600 text-white shadow-lg shadow-indigo-600/30 border border-indigo-400/40 font-semibold"
+                        : "text-slate-400 hover:text-slate-100 hover:bg-[#111c38] hover:translate-x-0.5",
+                    )}
+                  >
+                    <div className="flex items-center gap-3 min-w-0">
+                      <IconComponent
+                        className={cn(
+                          "size-4 shrink-0 transition-colors",
+                          active ? "text-white" : "text-slate-400 group-hover:text-slate-200",
+                        )}
+                      />
+                      <span className="truncate">{item.label}</span>
+                    </div>
+                  </Link>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Utility Section */}
+          <div className="space-y-1 pt-2 border-t border-[#15203b]/60">
+            <div className="flex flex-col gap-1">
+              {utilityNavItems.map((item) => {
+                const active = pathname.startsWith(item.to);
+                const IconComponent = item.icon;
+                return (
+                  <Link
+                    key={item.to}
+                    to={item.to}
+                    onClick={onNavigate}
+                    aria-current={active ? "page" : undefined}
+                    className={cn(
+                      "group relative flex items-center justify-between rounded-xl px-3 py-2 text-sm font-medium transition-all duration-200",
+                      active
+                        ? "bg-gradient-to-r from-indigo-600 to-purple-600 text-white shadow-lg shadow-indigo-600/30 border border-indigo-400/40 font-semibold"
+                        : "text-slate-400 hover:text-slate-100 hover:bg-[#111c38] hover:translate-x-0.5",
+                    )}
+                  >
+                    <div className="flex items-center gap-3 min-w-0">
+                      <IconComponent
+                        className={cn(
+                          "size-4 shrink-0 transition-colors",
+                          active ? "text-white" : "text-slate-400 group-hover:text-slate-200",
+                        )}
+                      />
+                      <span className="truncate">{item.label}</span>
+                    </div>
+                  </Link>
+                );
+              })}
+            </div>
+          </div>
         </nav>
       </div>
 

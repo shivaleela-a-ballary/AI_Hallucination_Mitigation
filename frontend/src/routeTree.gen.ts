@@ -12,9 +12,14 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AboutRouteImport } from './routes/about'
 import { Route as AskRouteImport } from './routes/ask'
+import { Route as BeforeAfterRouteImport } from './routes/before-after'
 import { Route as CheckAnswerRouteImport } from './routes/check-answer'
+import { Route as ForensicsRouteImport } from './routes/forensics'
 import { Route as HistoryRouteImport } from './routes/history'
+import { Route as KnowledgeGraphRouteImport } from './routes/knowledge-graph'
 import { Route as NewVerificationRouteImport } from './routes/new-verification'
+import { Route as ResearchPaperAuditorRouteImport } from './routes/research-paper-auditor'
+import { Route as RiskHeatmapRouteImport } from './routes/risk-heatmap'
 import { Route as SettingsRouteImport } from './routes/settings'
 import { Route as SourcesRouteImport } from './routes/sources'
 import { Route as UploadsRouteImport } from './routes/uploads'
@@ -35,9 +40,19 @@ const AskRoute = AskRouteImport.update({
   path: '/ask',
   getParentRoute: () => rootRouteImport,
 } as any)
+const BeforeAfterRoute = BeforeAfterRouteImport.update({
+  id: '/before-after',
+  path: '/before-after',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const CheckAnswerRoute = CheckAnswerRouteImport.update({
   id: '/check-answer',
   path: '/check-answer',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ForensicsRoute = ForensicsRouteImport.update({
+  id: '/forensics',
+  path: '/forensics',
   getParentRoute: () => rootRouteImport,
 } as any)
 const HistoryRoute = HistoryRouteImport.update({
@@ -45,9 +60,24 @@ const HistoryRoute = HistoryRouteImport.update({
   path: '/history',
   getParentRoute: () => rootRouteImport,
 } as any)
+const KnowledgeGraphRoute = KnowledgeGraphRouteImport.update({
+  id: '/knowledge-graph',
+  path: '/knowledge-graph',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const NewVerificationRoute = NewVerificationRouteImport.update({
   id: '/new-verification',
   path: '/new-verification',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ResearchPaperAuditorRoute = ResearchPaperAuditorRouteImport.update({
+  id: '/research-paper-auditor',
+  path: '/research-paper-auditor',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const RiskHeatmapRoute = RiskHeatmapRouteImport.update({
+  id: '/risk-heatmap',
+  path: '/risk-heatmap',
   getParentRoute: () => rootRouteImport,
 } as any)
 const SettingsRoute = SettingsRouteImport.update({
@@ -75,9 +105,14 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/about': typeof AboutRoute
   '/ask': typeof AskRoute
+  '/before-after': typeof BeforeAfterRoute
   '/check-answer': typeof CheckAnswerRoute
+  '/forensics': typeof ForensicsRoute
   '/history': typeof HistoryRoute
+  '/knowledge-graph': typeof KnowledgeGraphRoute
   '/new-verification': typeof NewVerificationRoute
+  '/research-paper-auditor': typeof ResearchPaperAuditorRoute
+  '/risk-heatmap': typeof RiskHeatmapRoute
   '/settings': typeof SettingsRoute
   '/sources': typeof SourcesRoute
   '/uploads': typeof UploadsRoute
@@ -87,9 +122,14 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/about': typeof AboutRoute
   '/ask': typeof AskRoute
+  '/before-after': typeof BeforeAfterRoute
   '/check-answer': typeof CheckAnswerRoute
+  '/forensics': typeof ForensicsRoute
   '/history': typeof HistoryRoute
+  '/knowledge-graph': typeof KnowledgeGraphRoute
   '/new-verification': typeof NewVerificationRoute
+  '/research-paper-auditor': typeof ResearchPaperAuditorRoute
+  '/risk-heatmap': typeof RiskHeatmapRoute
   '/settings': typeof SettingsRoute
   '/sources': typeof SourcesRoute
   '/uploads': typeof UploadsRoute
@@ -100,9 +140,14 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/about': typeof AboutRoute
   '/ask': typeof AskRoute
+  '/before-after': typeof BeforeAfterRoute
   '/check-answer': typeof CheckAnswerRoute
+  '/forensics': typeof ForensicsRoute
   '/history': typeof HistoryRoute
+  '/knowledge-graph': typeof KnowledgeGraphRoute
   '/new-verification': typeof NewVerificationRoute
+  '/research-paper-auditor': typeof ResearchPaperAuditorRoute
+  '/risk-heatmap': typeof RiskHeatmapRoute
   '/settings': typeof SettingsRoute
   '/sources': typeof SourcesRoute
   '/uploads': typeof UploadsRoute
@@ -114,9 +159,14 @@ export interface FileRouteTypes {
     | '/'
     | '/about'
     | '/ask'
+    | '/before-after'
     | '/check-answer'
+    | '/forensics'
     | '/history'
+    | '/knowledge-graph'
     | '/new-verification'
+    | '/research-paper-auditor'
+    | '/risk-heatmap'
     | '/settings'
     | '/sources'
     | '/uploads'
@@ -126,9 +176,14 @@ export interface FileRouteTypes {
     | '/'
     | '/about'
     | '/ask'
+    | '/before-after'
     | '/check-answer'
+    | '/forensics'
     | '/history'
+    | '/knowledge-graph'
     | '/new-verification'
+    | '/research-paper-auditor'
+    | '/risk-heatmap'
     | '/settings'
     | '/sources'
     | '/uploads'
@@ -138,9 +193,14 @@ export interface FileRouteTypes {
     | '/'
     | '/about'
     | '/ask'
+    | '/before-after'
     | '/check-answer'
+    | '/forensics'
     | '/history'
+    | '/knowledge-graph'
     | '/new-verification'
+    | '/research-paper-auditor'
+    | '/risk-heatmap'
     | '/settings'
     | '/sources'
     | '/uploads'
@@ -151,9 +211,14 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AboutRoute: typeof AboutRoute
   AskRoute: typeof AskRoute
+  BeforeAfterRoute: typeof BeforeAfterRoute
   CheckAnswerRoute: typeof CheckAnswerRoute
+  ForensicsRoute: typeof ForensicsRoute
   HistoryRoute: typeof HistoryRoute
+  KnowledgeGraphRoute: typeof KnowledgeGraphRoute
   NewVerificationRoute: typeof NewVerificationRoute
+  ResearchPaperAuditorRoute: typeof ResearchPaperAuditorRoute
+  RiskHeatmapRoute: typeof RiskHeatmapRoute
   SettingsRoute: typeof SettingsRoute
   SourcesRoute: typeof SourcesRoute
   UploadsRoute: typeof UploadsRoute
@@ -183,11 +248,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AskRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/before-after': {
+      id: '/before-after'
+      path: '/before-after'
+      fullPath: '/before-after'
+      preLoaderRoute: typeof BeforeAfterRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/check-answer': {
       id: '/check-answer'
       path: '/check-answer'
       fullPath: '/check-answer'
       preLoaderRoute: typeof CheckAnswerRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/forensics': {
+      id: '/forensics'
+      path: '/forensics'
+      fullPath: '/forensics'
+      preLoaderRoute: typeof ForensicsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/history': {
@@ -197,11 +276,32 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof HistoryRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/knowledge-graph': {
+      id: '/knowledge-graph'
+      path: '/knowledge-graph'
+      fullPath: '/knowledge-graph'
+      preLoaderRoute: typeof KnowledgeGraphRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/new-verification': {
       id: '/new-verification'
       path: '/new-verification'
       fullPath: '/new-verification'
       preLoaderRoute: typeof NewVerificationRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/research-paper-auditor': {
+      id: '/research-paper-auditor'
+      path: '/research-paper-auditor'
+      fullPath: '/research-paper-auditor'
+      preLoaderRoute: typeof ResearchPaperAuditorRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/risk-heatmap': {
+      id: '/risk-heatmap'
+      path: '/risk-heatmap'
+      fullPath: '/risk-heatmap'
+      preLoaderRoute: typeof RiskHeatmapRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/settings': {
@@ -239,9 +339,14 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AboutRoute: AboutRoute,
   AskRoute: AskRoute,
+  BeforeAfterRoute: BeforeAfterRoute,
   CheckAnswerRoute: CheckAnswerRoute,
+  ForensicsRoute: ForensicsRoute,
   HistoryRoute: HistoryRoute,
+  KnowledgeGraphRoute: KnowledgeGraphRoute,
   NewVerificationRoute: NewVerificationRoute,
+  ResearchPaperAuditorRoute: ResearchPaperAuditorRoute,
+  RiskHeatmapRoute: RiskHeatmapRoute,
   SettingsRoute: SettingsRoute,
   SourcesRoute: SourcesRoute,
   UploadsRoute: UploadsRoute,
