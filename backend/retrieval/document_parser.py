@@ -1,6 +1,7 @@
 """
 Document Parsing and Passage Chunking for Ingestion.
 Supports PDF, TXT, Markdown, CSV, and JSON formats.
+Includes strict binary/garbage rejection and text validation to prevent corrupted claims.
 """
 
 from __future__ import annotations
@@ -14,8 +15,40 @@ from typing import BinaryIO
 logger = logging.getLogger(__name__)
 
 
+def is_valid_claim_text(text: str) -> bool:
+    """
+    Validate that text constitutes human-readable prose suitable for factual claim analysis.
+    Rejects binary markers (%PDF-, etc.), control characters, and non-prose gibberish.
+    """
+    if not text or not isinstance(text, str):
+        return False
+
+    clean = text.strip()
+    if len(clean) < 15:
+        return False
+
+    # Check for obvious binary or PDF stream signatures
+    if clean.startswith("%PDF") or "\x00" in clean or "obj <<" in clean or "endobj" in clean:
+        return False
+
+    # Check printable character ratio (reject binary streams decoded as text)
+    printable_count = sum(1 for c in clean if c.isprintable())
+    if printable_count / max(len(clean), 1) < 0.85:
+        return False
+
+    # Must contain at least 3 legitimate words with alphabetic characters
+    words = [w for w in clean.split() if any(c.isalpha() for c in w)]
+    if len(words) < 3:
+        return False
+
+    return True
+
+
 def extract_text_from_file(filename: str, content_bytes: bytes) -> str:
-    """Extract clean text content from various file types."""
+    """
+    Extract clean, human-readable text content from various file types.
+    Never returns raw binary byte streams for PDFs or other documents.
+    """
     lower_name = filename.lower()
 
     # 1. PDF
@@ -25,13 +58,18 @@ def extract_text_from_file(filename: str, content_bytes: bytes) -> str:
             reader = pypdf.PdfReader(io.BytesIO(content_bytes))
             pages = []
             for i, page in enumerate(reader.pages):
-                text = page.extract_text()
-                if text:
-                    pages.append(f"--- Page {i + 1} ---\n{text.strip()}")
-            return "\n\n".join(pages)
+                page_text = page.extract_text()
+                if page_text and page_text.strip():
+                    pages.append(f"--- Page {i + 1} ---\n{page_text.strip()}")
+            extracted = "\n\n".join(pages)
+            if extracted.strip():
+                return extracted
+            logger.warning("pypdf extracted zero text pages from %s (may be scanned image PDF).", filename)
+            return ""
         except Exception as err:
-            logger.warning("Failed to extract PDF with pypdf: %s. Falling back to raw decode.", err)
-            return content_bytes.decode("utf-8", errors="ignore")
+            logger.warning("Failed to extract PDF text with pypdf from %s: %s", filename, err)
+            # NEVER fall back to raw binary bytes for PDFs
+            return ""
 
     # 2. JSON
     if lower_name.endswith(".json"):
@@ -49,7 +87,7 @@ def extract_text_from_file(filename: str, content_bytes: bytes) -> str:
                 return "\n\n".join(lines)
             return json.dumps(data, indent=2)
         except Exception:
-            return content_bytes.decode("utf-8", errors="ignore")
+            return ""
 
     # 3. CSV
     if lower_name.endswith(".csv"):
@@ -58,7 +96,7 @@ def extract_text_from_file(filename: str, content_bytes: bytes) -> str:
             lines = [line.strip() for line in text.splitlines() if line.strip()]
             return "\n".join(lines)
         except Exception:
-            return content_bytes.decode("utf-8", errors="ignore")
+            return ""
 
     # 4. Images (PNG, JPG, JPEG, WEBP, BMP, TIFF, GIF)
     image_extensions = (".png", ".jpg", ".jpeg", ".webp", ".bmp", ".tiff", ".gif")
@@ -87,9 +125,18 @@ def extract_text_from_file(filename: str, content_bytes: bytes) -> str:
 
     # 5. Plain Text & Markdown
     try:
-        return content_bytes.decode("utf-8")
+        decoded = content_bytes.decode("utf-8")
+        if is_valid_claim_text(decoded):
+            return decoded
+        return ""
     except UnicodeDecodeError:
-        return content_bytes.decode("latin-1", errors="ignore")
+        try:
+            decoded = content_bytes.decode("latin-1", errors="ignore")
+            if is_valid_claim_text(decoded):
+                return decoded
+            return ""
+        except Exception:
+            return ""
 
 
 def chunk_text(
@@ -105,13 +152,13 @@ def chunk_text(
     clean = re.sub(r"\r\n", "\n", text)
     clean = re.sub(r"\n{3,}", "\n\n", clean).strip()
 
-    if not clean:
+    if not clean or not is_valid_claim_text(clean):
         return []
 
     # First split by paragraphs
     paragraphs = [p.strip() for p in clean.split("\n\n") if p.strip()]
     words_list: list[str] = []
-    
+
     for p in paragraphs:
         words = p.split()
         if words:
@@ -122,10 +169,13 @@ def chunk_text(
 
     # If document is small enough, return as single chunk
     if len(words_list) <= target_words + overlap_words:
-        return [{
-            "title": f"{title} (Section 1)",
-            "content": " ".join(words_list),
-        }]
+        chunk_content = " ".join(words_list)
+        if is_valid_claim_text(chunk_content):
+            return [{
+                "title": f"{title} (Section 1)",
+                "content": chunk_content,
+            }]
+        return []
 
     chunks: list[dict[str, str]] = []
     step = max(1, target_words - overlap_words)
@@ -135,13 +185,14 @@ def chunk_text(
         window = words_list[i : i + target_words]
         if not window:
             break
-        
+
         chunk_text_str = " ".join(window)
-        chunks.append({
-            "title": f"{title} (Section {chunk_idx})",
-            "content": chunk_text_str,
-        })
-        chunk_idx += 1
+        if is_valid_claim_text(chunk_text_str):
+            chunks.append({
+                "title": f"{title} (Section {chunk_idx})",
+                "content": chunk_text_str,
+            })
+            chunk_idx += 1
 
         if i + target_words >= len(words_list):
             break
