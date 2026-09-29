@@ -31,6 +31,7 @@ import { toast } from "sonner";
 import { AppShell } from "@/components/app/app-shell";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { api, type AnswerRecord, type Evidence } from "@/lib/api";
+import { useVerification } from "@/lib/verification-context";
 import { useTheme } from "@/hooks/use-theme";
 
 export interface AnalysisClaim {
@@ -364,6 +365,7 @@ function AskQuestionPage() {
   const search = Route.useSearch();
   const navigate = useNavigate();
   const { theme, setTheme } = useTheme();
+  const { currentVerification, setVerification } = useVerification();
 
   const [inputQuery, setInputQuery] = useState(DEFAULT_ANALYSIS.question);
   const [analyzedTimestamp, setAnalyzedTimestamp] = useState(DEFAULT_ANALYSIS.analyzedAt);
@@ -549,6 +551,29 @@ function AskQuestionPage() {
       };
 
       setCurrentAnalysis(dynamicAnalysis);
+
+      // Save to canonical verification session with all decomposed claims
+      setVerification({
+        id: res.id || String(Date.now()),
+        query: q,
+        claim: q,
+        answer: res.answer || res.explanation,
+        verdict: res.verification_status || res.overall_verdict || "SUPPORTED",
+        verification_status: res.verification_status || res.overall_verdict || "SUPPORTED",
+        confidence: res.confidence_score || 0.85,
+        confidence_score: res.confidence_score || 0.85,
+        hallucination_risk_score: overallRiskVal,
+        risk_score: (res.hallucination_risk_score ?? overallRiskVal) / 100,
+        claims: res.claims || [],
+        evidence: (res.sources || res.evidence || []) as unknown as any[],
+        sources: (res.sources || res.evidence || []) as unknown as any[],
+        knowledge_graph: res.knowledge_graph || { nodes: [], edges: [] },
+        forensics: (res as unknown as { forensics?: Record<string, unknown> }).forensics || undefined,
+        risk_analysis: (res as unknown as { risk_analysis?: Record<string, unknown> }).risk_analysis || undefined,
+        before_after: (res as unknown as { before_after?: Record<string, unknown> }).before_after || undefined,
+        created_at: new Date().toISOString(),
+      });
+
       toast.success("Live backend verification completed!");
     } catch (err) {
       console.error("Backend ask error:", err);

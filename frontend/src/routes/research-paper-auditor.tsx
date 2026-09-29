@@ -25,8 +25,8 @@ import {
 import { AppShell } from "@/components/app/app-shell";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { api, type PaperAuditResponse, type PaperAuditClaim } from "@/lib/api";
+import { formatRiskPercentage, normalizeRisk, getRiskTier } from "@/lib/verification-context";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/research-paper-auditor")({
@@ -364,7 +364,18 @@ function ResearchPaperAuditorPage() {
                         </div>
 
                         <div className="text-xs text-slate-400">
-                          Risk Score: <strong className={claim.risk_score > 0.6 ? "text-rose-400" : "text-emerald-400"}>{Math.round(claim.risk_score * 100)}%</strong>
+                          Risk Score:{" "}
+                          <strong
+                            className={
+                              normalizeRisk(claim.risk_score) > 0.59
+                                ? "text-rose-400"
+                                : normalizeRisk(claim.risk_score) > 0.24
+                                ? "text-amber-400"
+                                : "text-emerald-400"
+                            }
+                          >
+                            {formatRiskPercentage(claim.risk_score)} ({getRiskTier(claim.risk_score)} RISK)
+                          </strong>
                         </div>
                       </div>
 

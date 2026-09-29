@@ -30,6 +30,14 @@ import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { api, type CheckAnswerResponse, type CheckAnswerClaim, type UploadedDocument } from "@/lib/api";
+import {
+  useVerification,
+  formatRiskPercentage,
+  normalizeRisk,
+  getRiskTier,
+  clampPercentage,
+  type VerificationRecord,
+} from "@/lib/verification-context";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/check-answer")({
@@ -56,6 +64,7 @@ const samplePresets = [
 
 function CheckAnswerPage() {
   const search = Route.useSearch();
+  const { currentVerification, setVerification } = useVerification();
   const [inputText, setInputText] = useState(search.q || "");
   const [selectedDocId, setSelectedDocId] = useState<string>("");
   const [uploadedDocs, setUploadedDocs] = useState<UploadedDocument[]>([]);
@@ -70,7 +79,17 @@ function CheckAnswerPage() {
     api.getUploads().then((res) => {
       if (res?.documents) setUploadedDocs(res.documents);
     }).catch(() => {});
-  }, []);
+
+    // Pre-fill from canonical verification if already active
+    if (!result && currentVerification) {
+      if (currentVerification.original_text || currentVerification.verified_claims || currentVerification.claims) {
+        setResult(currentVerification as unknown as CheckAnswerResponse);
+        if (!inputText && (currentVerification.original_text || currentVerification.query || currentVerification.claim)) {
+          setInputText(currentVerification.original_text || currentVerification.query || currentVerification.claim || "");
+        }
+      }
+    }
+  }, [currentVerification, result, inputText]);
 
   const handleRunAnalysis = async (textToAnalyze?: string) => {
     const text = (textToAnalyze ?? inputText).trim();
@@ -86,6 +105,34 @@ function CheckAnswerPage() {
         document_id: selectedDocId || undefined,
       });
       setResult(res);
+
+      // Save to canonical verification session
+      const canonicalEvidence = res.claims.flatMap((c) => [
+        ...(c.supporting_evidence || []),
+        ...(c.contradicting_evidence || []),
+      ]);
+      setVerification({
+        id: res.id,
+        query: text,
+        claim: text,
+        answer: res.corrected_answer || text,
+        verdict: res.refuted_claims_count > 0 ? "REFUTED" : res.supported_claims_count > 0 ? "SUPPORTED" : "UNVERIFIED",
+        confidence: res.overall_reliability_score,
+        hallucination_risk_score: Math.round(
+          res.overall_reliability_score < 0.5 ? (1 - res.overall_reliability_score) * 100 : 20
+        ),
+        evidence: canonicalEvidence,
+        sources: canonicalEvidence,
+        knowledge_graph: res.knowledge_graph || { nodes: [], edges: [] },
+        forensics: res.forensics || undefined,
+        risk_analysis: res.risk_analysis || undefined,
+        before_after: res.before_after || undefined,
+        claims: res.claims as unknown as VerificationRecord["claims"],
+        verified_claims: res.verified_claims,
+        original_text: res.original_text,
+        created_at: res.created_at || new Date().toISOString(),
+      });
+
       toast.success("Analysis complete: Verified against empirical corpus.");
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : "Failed to analyze answer.";
@@ -220,7 +267,7 @@ function CheckAnswerPage() {
               <div className="rounded-2xl border border-[#172545] bg-[#091124] p-4 text-center">
                 <p className="text-[11px] font-semibold text-slate-400 uppercase">Reliability Score</p>
                 <p className="text-2xl font-bold text-white mt-1">
-                  {Math.round(result.overall_reliability_score * 100)}%
+                  {clampPercentage(result.overall_reliability_score)}%
                 </p>
                 <span className="text-[10px] text-slate-500">Based on factual grounding</span>
               </div>
@@ -324,7 +371,20 @@ function CheckAnswerPage() {
                           </div>
 
                           <div className="flex items-center gap-3 text-xs text-slate-400">
-                            <span>Risk Score: <strong className={riskScore > 0.6 ? "text-rose-400" : riskScore > 0.25 ? "text-amber-400" : "text-emerald-400"}>{Math.round(riskScore * 100)}%</strong></span>
+                            <span>
+                              Risk Score:{" "}
+                              <strong
+                                className={
+                                  normalizeRisk(riskScore) > 0.59
+                                    ? "text-rose-400"
+                                    : normalizeRisk(riskScore) > 0.24
+                                    ? "text-amber-400"
+                                    : "text-emerald-400"
+                                }
+                              >
+                                {formatRiskPercentage(riskScore)} ({getRiskTier(riskScore)} RISK)
+                              </strong>
+                            </span>
                             <span>Confidence: <strong className="text-slate-200">{Math.round(claimItem.confidence_score * 100)}%</strong></span>
                           </div>
                         </div>
