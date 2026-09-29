@@ -27,6 +27,7 @@ class ClaimResponse(BaseModel):
     verdict: Optional[str] = None
     evidence_titles: List[str] = Field(default_factory=list)
     evidence_score: float = 0.0
+    risk_score: Optional[float] = None
     hallucination_risk_score: Optional[int] = None
     hallucination_risk_label: Optional[str] = None
     supporting_count: int = 0
@@ -37,6 +38,8 @@ class ClaimResponse(BaseModel):
     explanation: Optional[str] = None
     key_takeaway: Optional[str] = None
     method: str = "HuggingFace NLI + Multi-Source Evidence"
+    forensics: Optional[dict] = None
+    risk_analysis: Optional[dict] = None
 
 
 class ChatResponse(BaseModel):
@@ -49,10 +52,12 @@ class ChatResponse(BaseModel):
     corrected_answer: Optional[str] = None
     key_takeaway: Optional[str] = None
     verification_status: str
+    verdict: Optional[str] = None
     overall_verdict: Optional[str] = None
     confidence_score: float
     confidence_percentage: Optional[int] = None
     confidence_available: bool = False
+    risk_score: Optional[float] = None
     hallucination_risk_score: Optional[int] = None
     hallucination_risk_label: Optional[str] = None
     source_reliability_score: Optional[int] = None
@@ -72,20 +77,28 @@ class ChatResponse(BaseModel):
     hallucination_risk: str = "MEDIUM"
     explanation: str = ""
     explanation_bullets: List[str] = Field(default_factory=list)
+    forensics: Optional[dict] = None
+    risk_analysis: Optional[dict] = None
+    before_after: Optional[dict] = None
 
 
 class VerificationResponse(BaseModel):
     id: Optional[str] = None
     created_at: Optional[str] = None
     analyzed_at: Optional[str] = None
+    query: Optional[str] = None
     claim: str
+    answer: Optional[str] = None
     verification_status: str
+    verdict: Optional[str] = None
     overall_verdict: str = "REFUTED"
     prediction: Optional[str] = None
+    confidence: Optional[float] = None
     confidence_score: float
     confidence_percentage: int = 89
     confidence_available: bool
     probabilities: Optional[Dict[str, float]] = None
+    risk_score: Optional[float] = None
     hallucination_risk_score: int = 82
     hallucination_risk_label: str = "High Risk"
     source_reliability_score: int = 92
@@ -102,6 +115,7 @@ class VerificationResponse(BaseModel):
         "Results should be considered as guidance and not a replacement for professional medical advice."
     )
     why_flagged_list: List[dict] = Field(default_factory=list)
+    sources: List[Source] = Field(default_factory=list)
     evidence: List[Source] = Field(default_factory=list)
     supporting_evidence: List[Source] = Field(default_factory=list)
     contradicting_evidence: List[Source] = Field(default_factory=list)
@@ -115,6 +129,9 @@ class VerificationResponse(BaseModel):
     explanation: str = ""
     explanation_bullets: List[str] = Field(default_factory=list)
     knowledge_graph: dict = Field(default_factory=lambda: {"nodes": [], "edges": []})
+    forensics: Optional[dict] = None
+    risk_analysis: Optional[dict] = None
+    before_after: Optional[dict] = None
 
 
 class CheckAnswerClaim(BaseModel):
@@ -124,12 +141,14 @@ class CheckAnswerClaim(BaseModel):
     verification_status: str
     confidence_score: float
     hallucination_risk: str
-    risk_score: int = 25
+    risk_score: float = 0.25
+    hallucination_risk_score: Optional[int] = 25
     evidence_count: int
     supporting_evidence: List[Source] = Field(default_factory=list)
     contradicting_evidence: List[Source] = Field(default_factory=list)
     evidence_sources: List[dict] = Field(default_factory=list)
     forensics: Optional[dict] = None
+    risk_analysis: Optional[dict] = None
     correction: Optional[dict] = None
     explanation: str = ""
 
@@ -137,6 +156,15 @@ class CheckAnswerClaim(BaseModel):
 class CheckAnswerResponse(BaseModel):
     id: Optional[str] = None
     created_at: Optional[str] = None
+    query: Optional[str] = None
+    claim: Optional[str] = None
+    answer: Optional[str] = None
+    verdict: Optional[str] = None
+    verification_status: Optional[str] = None
+    confidence_score: Optional[float] = None
+    confidence: Optional[float] = None
+    risk_score: Optional[float] = None
+    hallucination_risk_score: Optional[int] = None
     original_text: str
     overall_reliability_score: float
     overall_hallucination_risk: str
@@ -150,4 +178,9 @@ class CheckAnswerResponse(BaseModel):
     before_after: Optional[dict] = None
     evidence_quality_metrics: Optional[dict] = None
     summary: str
+    sources: List[Source] = Field(default_factory=list)
+    evidence: List[Source] = Field(default_factory=list)
+    knowledge_graph: Optional[dict] = Field(default_factory=lambda: {"nodes": [], "edges": []})
+    forensics: Optional[dict] = None
+    risk_analysis: Optional[dict] = None
 
