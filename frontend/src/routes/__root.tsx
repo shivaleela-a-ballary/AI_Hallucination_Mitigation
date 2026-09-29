@@ -135,6 +135,7 @@ function RootShell({ children }: { children: ReactNode }) {
 
 import { AuthProvider } from "../lib/auth-context";
 import { AuthModal } from "../components/auth/auth-modal";
+import { VerificationProvider } from "../lib/verification-context";
 
 function RootComponent() {
   const { queryClient } = Route.useRouteContext();
@@ -142,10 +143,12 @@ function RootComponent() {
   return (
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
-        {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
-        <Outlet />
-        <AuthModal />
-        <Toaster />
+        <VerificationProvider>
+          {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
+          <Outlet />
+          <AuthModal />
+          <Toaster />
+        </VerificationProvider>
       </AuthProvider>
     </QueryClientProvider>
   );

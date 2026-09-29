@@ -182,9 +182,9 @@ function DashboardPage() {
             </div>
             <div className="mt-3 flex items-baseline gap-2">
               <span className="text-3xl font-bold text-rose-400 tracking-tight">
-                {loading ? "..." : `${hallucinationRate}%`}
+                {loading ? "..." : (hallucinationRate != null && totalClaims > 0 ? `${hallucinationRate}%` : "N/A")}
               </span>
-              <span className="text-xs text-rose-400/80">detected</span>
+              <span className="text-xs text-rose-400/80">{totalClaims > 0 ? "detected" : "no data"}</span>
             </div>
             <p className="mt-1 text-xs text-slate-400">Claims contradicting evidence</p>
           </div>
@@ -196,9 +196,9 @@ function DashboardPage() {
             </div>
             <div className="mt-3 flex items-baseline gap-2">
               <span className="text-3xl font-bold text-emerald-400 tracking-tight">
-                {loading ? "..." : `${Math.round(avgConfidence * 100)}%`}
+                {loading ? "..." : (avgConfidence != null && totalVerifications > 0 ? `${Math.round(avgConfidence * 100)}%` : "N/A")}
               </span>
-              <span className="text-xs text-emerald-400/80">NLI score</span>
+              <span className="text-xs text-emerald-400/80">{totalVerifications > 0 ? "NLI score" : "no data"}</span>
             </div>
             <p className="mt-1 text-xs text-slate-400">Mean entailment probability</p>
           </div>

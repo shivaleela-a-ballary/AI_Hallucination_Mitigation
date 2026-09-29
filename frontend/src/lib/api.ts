@@ -403,6 +403,8 @@ export const api = {
   ask: (question: string) =>
     request<AnswerRecord>("/chat", { method: "POST", body: JSON.stringify({ question }) }),
 
+  currentVerification: () => request<Record<string, any>>("/verification/current"),
+
   history: () => request<{ history: AnswerRecord[] }>("/history"),
 
   answer: (id: string) => request<AnswerRecord>(`/history/${encodeURIComponent(id)}`),
