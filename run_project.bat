@@ -6,8 +6,12 @@ echo ===================================================
 
 cd /d "%~dp0"
 
+set "PY_EXE=venv\Scripts\python.exe"
+if not exist "%PY_EXE%" set "PY_EXE=.venv\Scripts\python.exe"
+if not exist "%PY_EXE%" set "PY_EXE=python"
+
 echo [1/2] Launching FastAPI Backend on http://0.0.0.0:8000 ...
-start "Backend - FastAPI" cmd /k "title Backend API && .venv\Scripts\python.exe -m uvicorn api.app:app --app-dir backend --host 0.0.0.0 --port 8000 --reload"
+start "Backend - FastAPI" cmd /k "title Backend API && %PY_EXE% -m uvicorn api.app:app --app-dir backend --host 0.0.0.0 --port 8000 --reload"
 
 echo [2/2] Launching Frontend on http://localhost:8080 ...
 start "Frontend - Vite" cmd /k "title Frontend UI && cd frontend && npm run dev"

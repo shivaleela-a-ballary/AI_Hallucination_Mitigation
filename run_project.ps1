@@ -5,8 +5,10 @@ Write-Host "===================================================" -ForegroundColo
 
 $rootDir = Split-Path -Parent $MyInvocation.MyCommand.Path
 
+$pyExe = if (Test-Path "$rootDir\venv\Scripts\python.exe") { "venv\Scripts\python.exe" } elseif (Test-Path "$rootDir\.venv\Scripts\python.exe") { ".venv\Scripts\python.exe" } else { "python" }
+
 Write-Host "`n[1/2] Starting FastAPI Backend on http://0.0.0.0:8000 ..." -ForegroundColor Yellow
-Start-Process -FilePath "cmd.exe" -ArgumentList "/k title Backend API && cd /d `"$rootDir`" && .venv\Scripts\python.exe -m uvicorn api.app:app --app-dir backend --host 0.0.0.0 --port 8000 --reload"
+Start-Process -FilePath "cmd.exe" -ArgumentList "/k title Backend API && cd /d `"$rootDir`" && $pyExe -m uvicorn api.app:app --app-dir backend --host 0.0.0.0 --port 8000 --reload"
 
 Write-Host "[2/2] Starting Frontend on http://localhost:8080 ..." -ForegroundColor Yellow
 Start-Process -FilePath "cmd.exe" -ArgumentList "/k title Frontend UI && cd /d `"$rootDir\frontend`" && npm run dev"
