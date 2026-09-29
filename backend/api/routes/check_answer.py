@@ -22,11 +22,13 @@ from api.models.response_models import CheckAnswerClaim, CheckAnswerResponse
 from api.services.history_store import history_store
 from response_generation.formatter import source_payload
 from retrieval.deduplication import EvidenceDeduplicator
+from retrieval.providers.base import Document
 from retrieval.providers.manager import MultiSourceEvidenceManager
 from retrieval.reranker import EvidenceReranker
 from verification.contradiction import ContradictionDetector
 from verification.forensics import forensics_analyzer
 from verification.correction import correction_engine
+from verification.knowledge_graph import EvidenceKnowledgeGraph
 from verification.risk_analyzer import RiskAnalyzer
 from verification.scifact_verify import BaselineSciFactVerifier, LocalSciFactVerifier, VerificationStatus
 
@@ -64,16 +66,50 @@ def get_checker_components():
 
 
 def split_into_claims(text: str) -> list[str]:
-    """Split input paragraph into clean declarative claim sentences."""
+    """Split input paragraph into clean declarative claim sentences, deduplicated and validated."""
+    from retrieval.document_parser import is_valid_claim_text
     cleaned = text.strip()
-    raw_sentences = re.split(r"(?<=[.!?])\s+", cleaned)
-    valid_claims = []
+    raw_sentences = re.split(r"(?<!et al\.)(?<!e\.g\.)(?<!i\.e\.)(?<!vs\.)(?<=[.!?;\n])\s+", cleaned, flags=re.IGNORECASE)
+
+    conjunction_pattern = re.compile(
+        r"\s+(?:and\s+(?:it\s+)?(?:achieved|became|reached|outperformed|scored|proved|demonstrated|recorded|was\s+evaluated))\s+",
+        re.IGNORECASE
+    )
+
+    split_chunks = []
     for s in raw_sentences:
         s_clean = s.strip()
-        # Must be at least 15 chars and contain at least 3 words to constitute a factual assertion
-        if len(s_clean) >= 15 and len(s_clean.split()) >= 3:
-            valid_claims.append(s_clean)
-    return valid_claims or [cleaned]
+        if not s_clean:
+            continue
+        parts = conjunction_pattern.split(s_clean)
+        if len(parts) > 1 and all(len(p.strip().split()) >= 3 for p in parts):
+            split_chunks.append(parts[0].strip())
+            match = conjunction_pattern.search(s_clean)
+            matched_verb = match.group(0).strip() if match else "and achieved"
+            first_subject = parts[0].split()[0] if parts[0].split() else "It"
+            for p in parts[1:]:
+                p_clean = p.strip()
+                if not re.match(r"^(?:it|this|the|they|he|she|rag)\b", p_clean, re.IGNORECASE):
+                    verb_part = re.sub(r"^and\s+", "", matched_verb, flags=re.IGNORECASE)
+                    p_claim = f"{first_subject} {verb_part} {p_clean}"
+                else:
+                    p_claim = p_clean
+                split_chunks.append(p_claim)
+        else:
+            split_chunks.append(s_clean)
+
+    valid_claims = []
+    seen = set()
+    for s in split_chunks:
+        s_clean = s.strip()
+        if len(s_clean) >= 15 and len(s_clean.split()) >= 3 and is_valid_claim_text(s_clean):
+            norm = s_clean.lower()
+            if norm not in seen:
+                seen.add(norm)
+                valid_claims.append(s_clean)
+    if not valid_claims and is_valid_claim_text(cleaned):
+        return [cleaned]
+    return valid_claims
 
 
 @router.post("/check-answer", response_model=CheckAnswerResponse)
@@ -115,7 +151,7 @@ def check_ai_answer(
                 evidence=[],
                 verdict="UNVERIFIED",
                 risk_level="Medium",
-                risk_score=50.0,
+                risk_score=0.50,
             )
             corr_rep = correction_engine.generate_and_verify(
                 claim=claim,
@@ -130,12 +166,25 @@ def check_ai_answer(
                     verification_status="UNVERIFIED",
                     confidence_score=0.0,
                     hallucination_risk="MEDIUM",
-                    risk_score=50,
+                    risk_score=0.50,
+                    hallucination_risk_score=50,
                     evidence_count=0,
                     supporting_evidence=[],
                     contradicting_evidence=[],
                     evidence_sources=[],
                     forensics=forensics_rep.to_dict(),
+                    risk_analysis={
+                        "risk_score": 0.50,
+                        "hallucination_risk_score": 50,
+                        "hallucination_risk_label": "Moderate Risk",
+                        "evidence_quality": "LOW",
+                        "source_agreement_ratio": "0 / 0",
+                        "supporting_count": 0,
+                        "contradicting_count": 0,
+                        "uncertain_count": 0,
+                        "explanation": "No sufficiently matching evidence found in current corpora to verify or refute this assertion.",
+                        "explanation_bullets": ["Literature search across indexed corpora yielded no direct corroboration."],
+                    },
                     correction=corr_rep.to_dict() if corr_rep else None,
                     explanation="No sufficiently matching evidence found in current corpora to verify or refute this assertion.",
                 )
@@ -149,31 +198,37 @@ def check_ai_answer(
         status = contradiction_summary.overall_status
         status_str = status.value if hasattr(status, "value") else str(status)
 
+        # Run Forensics
+        forensics_rep = forensics_analyzer.analyze_claim(
+            claim=claim,
+            evidence=evidence,
+            verdict=status_str,
+        )
+
         risk_report = risk_analyzer.evaluate(
             claim=claim,
             evidence=evidence,
             contradiction_summary=contradiction_summary,
             verifications=[],
             raw_model_confidence=0.85 if status == VerificationStatus.SUPPORTED else 0.75,
+            detected_forensic_patterns=forensics_rep.detected_patterns,
         )
 
-        risk_score_int = int(round(risk_report.risk_score * 100))
+        risk_score_float = round(risk_report.risk_score, 2)
+        risk_score_int = int(round(risk_score_float * 100))
+
         if status == VerificationStatus.SUPPORTED:
             supported_count += 1
             reliability_scores.append(0.90)
-            risk_score_int = min(35, risk_score_int)
         elif status == VerificationStatus.REFUTED:
             refuted_count += 1
             reliability_scores.append(0.0)
-            risk_score_int = max(72, risk_score_int)
         elif status == VerificationStatus.UNVERIFIED:
             unverified_count += 1
             reliability_scores.append(0.50)
-            risk_score_int = 50
         else:
             uncertain_count += 1
             reliability_scores.append(0.40)
-            risk_score_int = max(40, min(70, risk_score_int))
 
         # Classify candidate evidence with acceptance/rejection status
         classified_sources = []
@@ -210,15 +265,6 @@ def check_ai_answer(
                 "relationship": rel,
             })
 
-        # Run Forensics
-        forensics_rep = forensics_analyzer.analyze_claim(
-            claim=claim,
-            evidence=evidence,
-            verdict=status_str,
-            risk_level=risk_report.hallucination_risk.title(),
-            risk_score=float(risk_score_int),
-        )
-
         # Run Verified Correction Engine
         corr_rep = correction_engine.generate_and_verify(
             claim=claim,
@@ -230,18 +276,33 @@ def check_ai_answer(
         supporting_payloads = [source_payload(d) for d in contradiction_summary.supporting_evidence]
         contradicting_payloads = [source_payload(d) for d in contradiction_summary.contradicting_evidence]
 
+        claim_risk_analysis = {
+            "risk_score": risk_score_float,
+            "hallucination_risk_score": risk_score_int,
+            "hallucination_risk_label": f"{risk_report.hallucination_risk.title()} Risk",
+            "evidence_quality": risk_report.evidence_quality,
+            "source_agreement_ratio": risk_report.source_agreement_ratio,
+            "supporting_count": risk_report.supporting_count,
+            "contradicting_count": risk_report.contradicting_count,
+            "uncertain_count": risk_report.uncertain_count,
+            "explanation": risk_report.explanation,
+            "explanation_bullets": risk_report.explanation_bullets,
+        }
+
         verified_claims.append(
             CheckAnswerClaim(
                 claim=claim,
                 verification_status=status_str,
                 confidence_score=risk_report.model_confidence,
                 hallucination_risk=risk_report.hallucination_risk,
-                risk_score=risk_score_int,
+                risk_score=risk_score_float,
+                hallucination_risk_score=risk_score_int,
                 evidence_count=len(evidence),
                 supporting_evidence=supporting_payloads,
                 contradicting_evidence=contradicting_payloads,
                 evidence_sources=classified_sources,
                 forensics=forensics_rep.to_dict(),
+                risk_analysis=claim_risk_analysis,
                 correction=corr_rep.to_dict() if corr_rep else None,
                 explanation=risk_report.explanation_bullets[0] if risk_report.explanation_bullets else "",
             )
@@ -257,7 +318,7 @@ def check_ai_answer(
     # Compute Aggregate Reliability Score
     total_claims = len(claims)
     if total_claims > 0:
-        overall_reliability = round((sum(reliability_scores) / total_claims) * 100, 1)
+        overall_reliability = min(100.0, max(0.0, round((sum(reliability_scores) / total_claims) * 100, 1)))
     else:
         overall_reliability = 0.0
 
@@ -276,9 +337,16 @@ def check_ai_answer(
     mitigated_hallucination_rate = 0 if refuted_count > 0 else round((uncertain_count / max(total_claims, 1)) * 10)
     mitigated_reliability = min(98.0, round(overall_reliability + (refuted_count * 25.0) + (uncertain_count * 10.0), 1))
 
+    orig_risk_flt = round(sum(c.risk_score for c in verified_claims) / max(len(verified_claims), 1), 2)
+    mit_risk_flt = 0.08 if refuted_count > 0 else 0.05
+    risk_reduction_pct = max(0, int(round((orig_risk_flt - mit_risk_flt) * 100)))
+
     before_after = {
         "original_text": raw_text,
         "corrected_text": corrected_answer_text,
+        "original_risk_score": orig_risk_flt,
+        "mitigated_risk_score": mit_risk_flt,
+        "risk_reduction_percentage": risk_reduction_pct,
         "original_stats": {
             "total_claims": total_claims,
             "supported_count": supported_count,
@@ -319,13 +387,47 @@ def check_ai_answer(
         f"Overall Reliability: {overall_reliability}%, Hallucination Risk: {overall_risk}."
     )
 
+    # Build knowledge graph across all claims
+    def _to_doc(s) -> Document:
+        if hasattr(s, "model_dump"):
+            d = s.model_dump()
+            return Document(title=d.get("title", ""), content=d.get("content", ""), source=d.get("source", "Literature"))
+        elif isinstance(s, dict):
+            return Document(title=s.get("title", ""), content=s.get("content", ""), source=s.get("source", "Literature"))
+        else:
+            return Document(title=getattr(s, "title", ""), content=getattr(s, "content", ""), source=getattr(s, "source", "Literature"))
+
+    graph = EvidenceKnowledgeGraph()
+    all_evidence_docs = [
+        _to_doc(s)
+        for c in verified_claims for s in (c.supporting_evidence + c.contradicting_evidence)
+    ]
+    if all_evidence_docs:
+        graph.add_evidence(all_evidence_docs)
+    knowledge_graph_dict = {
+        "nodes": [{"id": str(nid), **attr} for nid, attr in graph.graph.nodes(data=True)],
+        "edges": [{"source": str(u), "target": str(v), **attr} for u, v, attr in graph.graph.edges(data=True)],
+    }
+
+    avg_risk_float = round(sum(c.risk_score for c in verified_claims) / max(len(verified_claims), 1), 2)
+    avg_risk_int = int(round(avg_risk_float * 100))
+
     result_payload = {
         "id": str(uuid4()),
         "created_at": datetime.now(timezone.utc).isoformat(),
         "type": "ai_answer_check",
         "original_text": raw_text,
+        "query": raw_text[:90] + ("..." if len(raw_text) > 90 else ""),
+        "claim": claims[0] if len(claims) == 1 else raw_text[:90] + ("..." if len(raw_text) > 90 else ""),
+        "answer": corrected_answer_text or raw_text,
+        "verdict": "SUPPORTED" if refuted_count == 0 and uncertain_count == 0 else "REFUTED" if refuted_count > 0 else "UNCERTAIN",
+        "verification_status": "SUPPORTED" if refuted_count == 0 and uncertain_count == 0 else "REFUTED" if refuted_count > 0 else "UNCERTAIN",
+        "confidence_score": round(overall_reliability / 100, 2),
+        "confidence": round(overall_reliability / 100, 2),
         "overall_reliability_score": overall_reliability,
         "overall_hallucination_risk": overall_risk,
+        "risk_score": avg_risk_float,
+        "hallucination_risk_score": avg_risk_int,
         "total_claims": total_claims,
         "supported_claims_count": supported_count,
         "refuted_claims_count": refuted_count,
@@ -336,10 +438,11 @@ def check_ai_answer(
         "before_after": before_after,
         "evidence_quality_metrics": evidence_quality_metrics,
         "summary": summary_text,
-        "query": raw_text[:90] + ("..." if len(raw_text) > 90 else ""),
-        "verification_status": "SUPPORTED" if refuted_count == 0 and uncertain_count == 0 else "REFUTED" if refuted_count > 0 else "UNCERTAIN",
-        "confidence_score": round(overall_reliability / 100, 2),
-        "sources": [s for c in verified_claims for s in c.supporting_evidence + c.contradicting_evidence][:8],
+        "sources": [s for c in verified_claims for s in c.supporting_evidence + c.contradicting_evidence][:12],
+        "evidence": [s for c in verified_claims for s in c.supporting_evidence + c.contradicting_evidence][:12],
+        "knowledge_graph": knowledge_graph_dict,
+        "forensics": verified_claims[0].forensics if verified_claims and verified_claims[0].forensics else None,
+        "risk_analysis": verified_claims[0].risk_analysis if verified_claims and verified_claims[0].risk_analysis else None,
     }
 
     # Save to history
