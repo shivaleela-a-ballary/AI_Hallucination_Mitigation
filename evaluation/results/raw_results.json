@@ -1,0 +1,40 @@
+{
+  "metadata": {
+    "timestamp": "2026-09-30 19:31:50",
+    "evaluation_mode": "authentic_unsimulated",
+    "corpus": "SciFact (5183 documents)",
+    "benchmark": "data/scifact/claims_dev.jsonl",
+    "retrieval_queries": 300,
+    "detection_queries": 100,
+    "random_seed": 42
+  },
+  "tables": {
+    "table_iii_detection": {
+      "Base LLM": {"P": 0.187, "R": 0.349, "Macro-F1": 0.213, "Latency": "0.213s"},
+      "Dense RAG": {"P": 0.462, "R": 0.481, "Macro-F1": 0.459, "Latency": "1.719s"},
+      "BM25 RAG": {"P": 0.442, "R": 0.441, "Macro-F1": 0.440, "Latency": "2.203s"},
+      "Hybrid RAG": {"P": 0.420, "R": 0.433, "Macro-F1": 0.422, "Latency": "0.197s"},
+      "Proposed Framework": {"P": 0.374, "R": 0.391, "Macro-F1": 0.378, "Latency": "0.458s"}
+    },
+    "table_iv_retrieval": {
+      "BM25": {"Recall@1": 0.523, "Recall@5": 0.757, "Recall@10": 0.797, "MRR": 0.619},
+      "Dense": {"Recall@1": 0.497, "Recall@5": 0.727, "Recall@10": 0.793, "MRR": 0.598},
+      "Hybrid": {"Recall@1": 0.583, "Recall@5": 0.783, "Recall@10": 0.850, "MRR": 0.671},
+      "Hybrid + RRF": {"Recall@1": 0.533, "Recall@5": 0.763, "Recall@10": 0.847, "MRR": 0.638}
+    },
+    "table_v_ablation": {
+      "Full Framework": {"Macro-F1": 0.355, "delta": "0.000"},
+      "Without NLI": {"Macro-F1": 0.180, "delta": "-0.175"},
+      "Without Dense Retrieval": {"Macro-F1": 0.402, "delta": "+0.047"},
+      "Without BM25/RRF": {"Macro-F1": 0.299, "delta": "-0.056"},
+      "Without Uncertainty": {"Macro-F1": 0.302, "delta": "-0.054"},
+      "Without Contradiction Rules": {"Macro-F1": 0.341, "delta": "-0.015"},
+      "Without Claim Decomposition": {"Macro-F1": 0.382, "delta": "+0.026"}
+    }
+  },
+  "hypotheses": {
+    "H1": {"mcnemar_chi2": 0.2105, "p_value": 0.6464, "statistically_significant": false},
+    "H2": {"dense_recall5": 0.727, "rrf_recall5": 0.763, "delta": 0.036, "supported": true},
+    "H3": {"full_f1": 0.355, "without_uncertainty_f1": 0.302, "delta": -0.054, "supported": true}
+  }
+}
