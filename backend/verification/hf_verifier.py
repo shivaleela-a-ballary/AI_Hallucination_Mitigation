@@ -100,6 +100,7 @@ class HuggingFaceClaimVerifier:
         self._hf_pipeline = None
         self._initialized = False
         self.contradiction_detector = ContradictionDetector()
+        self._passage_cache: dict[tuple[str, str], EvidenceCrossCheck] = {}
 
     def _lazy_init_hf_pipeline(self) -> None:
         """Lazily initialize Hugging Face transformers pipeline to avoid cold start overhead."""
@@ -123,6 +124,10 @@ class HuggingFaceClaimVerifier:
         """
         Cross-verifies a single evidence passage against a target claim.
         """
+        cache_key = (claim.strip(), document.source or document.content[:120])
+        if hasattr(self, "_passage_cache") and cache_key in self._passage_cache:
+            return self._passage_cache[cache_key]
+
         stance_result = self.contradiction_detector.analyze_passage(claim, document)
         status = stance_result.status
 
@@ -167,7 +172,7 @@ class HuggingFaceClaimVerifier:
             except Exception as exc:
                 logger.debug(f"HF pipeline inference skipped: {exc}")
 
-        return EvidenceCrossCheck(
+        result = EvidenceCrossCheck(
             document_title=document.title,
             document_source=document.source or "Scientific Literature",
             document_content=document.content,
@@ -182,6 +187,9 @@ class HuggingFaceClaimVerifier:
             url=document.url,
             reason=stance_result.reason or f"Evidence assessed as {verdict_label}.",
         )
+        if hasattr(self, "_passage_cache"):
+            self._passage_cache[cache_key] = result
+        return result
 
     def verify_single_claim(
         self,
